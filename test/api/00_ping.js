@@ -1,4 +1,4 @@
-const config = require('./config')
+const config = require('../config')
     , chai = require('chai')
     , chaiHttp = require('chai-http');
 
@@ -6,9 +6,9 @@ chai.use(chaiHttp);
 
 const expect = chai.expect;
 
-describe('API ping', function() {
-    describe('/ping', function() {
-        it('should return pong', function(done) {
+describe('00. API ping', function() {
+    describe('GET /ping', function() {
+        it('Returns pong message', function(done) {
             chai.request(config.server)
                 .get(config.apiPing)
                 .end(function (err, res) {

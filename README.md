@@ -8,28 +8,23 @@ This API test uses Node.js libraries as follows
 
 ## i. Installation
 1. Install and run [the sample API](https://github.com/lalamove/challenge/blob/master/set_api.md#how-to-run-the-above-api-on-your-local-machine) in your local machine's docker first.
-1. Check if the API is running, `http://localhost:51544/ping`.
-1. At this directory, `npm install`.
+2. Check if the API is running, `http://localhost:51544/ping`.
+3. At this directory, `npm install`.
 
 ## ii. Executing Tests
 
 ### IntelliJ
-1. Create an `npm run test` profile in your run configurations.
-
+1. Create an `npm run test` profile in your run configurations. \
 ![](screenshots/npmtest_intellij.png)
-
-1. Use the play or debug button.
-
+2. Use the play or debug button. \
 ![](screenshots/npmtest_intellij_run.png)
 
 ### Terminal
 1. At this directory, `npm run test`.
-1. Console similar to above should be printed.
+2. Console similar to above should be printed.
 
 ## iii. Viewing Reports
 - Immediately after test run finishes the summary and case-by-case results are printed in console.
-- Additionally, HTML report is generated under `mochawesome-report/` directory.
-
-![](screenshots/report_dir.png)
-
+- Additionally, HTML report is generated under `mochawesome-report/` directory. \
+![](screenshots/report_dir.png) \
 ![](screenshots/report_html.png)

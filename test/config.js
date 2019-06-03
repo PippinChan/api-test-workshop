@@ -1,3 +1,5 @@
+// TODO: This could be refactored to environment files
+
 let config = {
     server: 'http://localhost:51544/',
 

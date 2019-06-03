@@ -13,6 +13,8 @@ This API test uses Node.js libraries as follows
 
 ## ii. Executing Tests
 
+Before running tests, check whether API endpoints in `test/config.js` is correct.
+
 ### IntelliJ
 1. Create an `npm run test` profile in your run configurations. \
 ![](screenshots/npmtest_intellij.png)

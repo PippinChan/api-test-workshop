@@ -10,11 +10,16 @@ describe('02. API fetch order', function() {
     describe('GET /orders/{orderID}', function() {
         it('Returns HTTP 404 if the order does not exist', function(done) {
             chai.request(config.server)
-                .get(config.apiFetchOrder(-2148))
+            // Pass MAX_SAFE_INTEGER in hope to guarantee ORDER_NOT_FOUND. Maybe there is a better way...
+                .get(config.apiFetchOrder(Number.MAX_SAFE_INTEGER))
                 .end(function (err, res) {
                     expect(err).to.be.null;
                     expect(res).to.have.status(404);
-                    expect(res.body).to.be.an('object').that.is.empty;
+                    expect(res.body).to.be.an('object');
+
+                    // expect ORDER_NOT_FOUND to be a custom message for now
+                    expect(res.body).to.have.all.keys('message');
+                    expect(res.body['message']).to.be.a('string');
                     done();
                 });
         });

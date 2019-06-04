@@ -4,6 +4,7 @@ This API test uses Node.js libraries as follows
 - Runner: [Mocha](https://mochajs.org/#getting-started)
 - Timestamps: [Moment](https://momentjs.com/docs)
 - Assertion API: [Chai](https://www.chaijs.com/api/)
+- JSON Schema validation: [ajv](https://ajv.js.org/)
 - HTTP requester: [Chai HTTP](https://www.chaijs.com/plugins/chai-http/)
 - HTML report: [Mochawesome](https://www.npmjs.com/package/mochawesome)
 
@@ -14,7 +15,7 @@ This API test uses Node.js libraries as follows
 
 ## ii. Executing Tests
 
-Before running tests, check whether API endpoints in `test/config.js` is correct.
+Before running tests, check whether information in `test/config.js` is correct.
 
 ### IntelliJ
 1. Create an `npm run test` profile in your run configurations. \
@@ -44,5 +45,5 @@ Before running tests, check whether API endpoints in `test/config.js` is correct
 > **Result:** In price tests, `0.01` is used as comparison threshold.
 * At local docker deployment, server is running in UTC timezone.
 > **Result:** All generated timestamps in test scripts are in UTC. \
-If not, server's timezone can be adjusted in file `config.js` at this line. \
+If not, server's timezone can be adjusted in file `test/config.js` at this line. \
 `timezone: '+00:00'`

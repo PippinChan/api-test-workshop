@@ -1,7 +1,10 @@
-// TODO: This could be refactored to environment files
+// TODO: This could be refactored to interchangeable environment files
 
-let config = {
+module.exports = {
     server: 'http://localhost:51544/',
+
+    // This timezone should match server's clock
+    timezone: '+00:00',
 
     apiPing: 'ping',
     apiPlaceOrder: 'v1/orders',
@@ -10,5 +13,3 @@ let config = {
     apiCompleteOrder: function (orderID) { return `v1/orders/${orderID}/complete`; },
     apiCancelOrder: function (orderID) { return `v1/orders/${orderID}/cancel`; },
 };
-
-module.exports = config;

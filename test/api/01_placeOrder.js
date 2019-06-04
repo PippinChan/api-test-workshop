@@ -1,39 +1,67 @@
-const config = require('../config')
-    , constant = require('../constants')
+const constant = require('../constants')
     , chai = require('chai')
-    , chaiHttp = require('chai-http');
+    , utility = require('./utility')
+    , Ajv = require('ajv');
 
-chai.use(chaiHttp);
+chai.use(require('chai-http'));
+
+const ajv = new Ajv();
+ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-06.json'));
 
 const expect = chai.expect;
+const validatePlaceOrder = ajv.compile(require('../schema/01_placeOrder.schema.json'));
 
-describe('01. API place order', function() {
-    describe('POST /orders', function() {
-        it('Now order can be created', function(done) {
-            chai.request(config.server).post(config.apiPlaceOrder)
-                .send({
-                    stops: [constant.place.mongKokStn, constant.place.tstStn]
-                })
-                .end(function (err, res) {
-                    expect(err).to.be.null;
+const expected = {
+    currency: 'HKD',
+    priceCompareThreshold: 0.01,
+    rates: {
+        normal: {
+            minimum: 20,
+            additional: { metre: 200, rate: 5 },
+            time: {
+                from: { hour: 5, minute: 0, second: 0 },
+                to: { hour: 21, minute: 59, second: 59 }
+            }
+        },
+        lateNight: {
+            minimum: 30,
+            additional: { metre: 200, rate: 8 },
+            time: {
+                from: { hour: 22, minute: 0, second: 0 },
+                to: { hour: 4, minute: 59, second: 59 }
+            }
+        },
+    }
+};
+
+describe('01. Place Order (POST /orders)', function() {
+    describe('Verify data schema', function() {
+        let createdOrderID;
+
+        before(function(done) {
+           createdOrderID = 0;
+           done();
+        });
+
+        it('order now - should return id, distance, fare', function(done) {
+            utility.placeOrderNow(
+                [constant.place.centralStn, constant.place.tstStn],
+                function (res) {
                     expect(res).to.have.status(201);
 
-                    expect(res.body).to.have.all.keys('id', 'drivingDistancesInMeters', 'fare');
-                    expect(res.body['id']).to.be.a('number');
-                    expect(res.body['drivingDistancesInMeters']).to.be.an('array');
-                    expect(res.body['fare']).to.be.an('object');
+                    let valid = validatePlaceOrder(res.body);
+                    let validationError = JSON.stringify(validatePlaceOrder.errors);
+                    expect(valid, validationError).to.be.true;
 
+                    createdOrderID = res.body['id'];
                     done();
                 });
         });
 
-        // TODO: validate fare in day/night time
-        //
-
-        after(function() {
-            // TODO: we have a choice here to clean-up the created order in tests or not
-            // (by cancelling it or other means to delete it ?)
-            //
+        after(function(done) {
+            utility.cancelOrder(createdOrderID, function() {
+                done();
+            });
         })
     });
 });

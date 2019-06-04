@@ -2,8 +2,9 @@
 
 This API test uses Node.js libraries as follows
 - Runner: [Mocha](https://mochajs.org/#getting-started)
+- Timestamps: [Moment](https://momentjs.com/docs)
 - Assertion API: [Chai](https://www.chaijs.com/api/)
-- HTTP requestor: [Chai HTTP](https://www.chaijs.com/plugins/chai-http/)
+- HTTP requester: [Chai HTTP](https://www.chaijs.com/plugins/chai-http/)
 - HTML report: [Mochawesome](https://www.npmjs.com/package/mochawesome)
 
 ## i. Installation
@@ -30,3 +31,18 @@ Before running tests, check whether API endpoints in `test/config.js` is correct
 - Additionally, HTML report is generated under `mochawesome-report/` directory. \
 ![](screenshots/report_dir.png) \
 ![](screenshots/report_html.png)
+
+-----
+
+#### Notes:
+* As [discouraged by Mochajs.org](https://mochajs.org/#arrow-functions), ECMAScript 6 arrow functions are not used in test script files.
+
+#### Assumptions
+* Server would not use number `0` as order ID.
+> **Result:** In 404 order not found tests, `0` is used as order ID.
+* In price calculations, numbers are rounded to 2 decimal points.
+> **Result:** In price tests, `0.01` is used as comparison threshold.
+* At local docker deployment, server is running in UTC timezone.
+> **Result:** All generated timestamps in test scripts are in UTC. \
+If not, server's timezone can be adjusted in file `config.js` at this line. \
+`timezone: '+00:00'`

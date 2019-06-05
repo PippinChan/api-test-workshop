@@ -12,14 +12,14 @@ describe('04. API complete order', function() {
             chai.request(config.server)
             // Pass MAX_SAFE_INTEGER in hope to guarantee ORDER_NOT_FOUND. Maybe there is a better way...
                 .put(config.apiCompleteOrder(Number.MAX_SAFE_INTEGER))
-                .end(function (err, res) {
+                .end((err, res) => {
                     expect(err).to.be.null;
                     expect(res).to.have.status(404);
                     expect(res.body).to.be.an('object');
 
                     // expect ORDER_NOT_FOUND to be a custom message for now
                     expect(res.body).to.have.all.keys('message');
-                    expect(res.body['message']).to.be.a('string');
+                    expect(res.body.message).to.be.a('string');
                     done();
                 });
         });

@@ -36,7 +36,7 @@ Before running tests, check whether information in `test/config.js` is correct.
 -----
 
 #### Notes:
-* As [discouraged by Mochajs.org](https://mochajs.org/#arrow-functions), ECMAScript 6 arrow functions are not used in test script files.
+* As [discouraged by Mochajs.org](https://mochajs.org/#arrow-functions), ECMAScript 6 arrow functions are not used in test spec functions.
 
 #### Assumptions
 * Server would not use number `0` as order ID.

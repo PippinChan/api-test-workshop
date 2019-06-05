@@ -8,8 +8,8 @@ module.exports = {
 
     apiPing: 'ping',
     apiPlaceOrder: 'v1/orders',
-    apiFetchOrder: function (orderID) { return `v1/orders/${orderID}`; },
-    apiTakeOrder: function (orderID) { return `v1/orders/${orderID}/take`; },
-    apiCompleteOrder: function (orderID) { return `v1/orders/${orderID}/complete`; },
-    apiCancelOrder: function (orderID) { return `v1/orders/${orderID}/cancel`; },
+    apiFetchOrder: orderID => `v1/orders/${orderID}`,
+    apiTakeOrder: orderID => `v1/orders/${orderID}/take`,
+    apiCompleteOrder: orderID => `v1/orders/${orderID}/complete`,
+    apiCancelOrder: orderID => `v1/orders/${orderID}/cancel`,
 };

@@ -11,10 +11,10 @@ describe('00. Ping (GET /ping)', function() {
         it('should return pong message', function(done) {
             chai.request(config.server)
                 .get(config.apiPing)
-                .end(function (err, res) {
+                .end((err, res) => {
                     expect(err).to.be.null;
                     expect(res).to.have.status(200);
-                    expect(res.body['msg']).to.be.equal('pong');
+                    expect(res.body.msg).to.be.equal('pong');
                     done();
                 });
         });

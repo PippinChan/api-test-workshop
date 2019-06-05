@@ -45,6 +45,7 @@ module.exports = {
     },
     cancelLastSuccessfullyPlacedOrder: (callback) => {
         if (typeof lastSuccessfulOrderId === 'number') module.exports.cancelOrder(lastSuccessfulOrderId, callback);
+        else callback();
     },
     getISOTimeNextDay: (h, m, s) => {
         let isoString = moment().utcOffset(config.timezone).add(1, 'day').hour(h).minute(m).second(s).toISOString();

@@ -1,5 +1,3 @@
-require('../config');
-new (require('moment'));
 const constant = require('../constants')
     , chai = require('chai')
     , ajv = new (require('ajv'))
@@ -48,16 +46,16 @@ describe('01. Place Order (POST /orders)', function () {
     });
 
     describe('Verify data schema', function () {
-        const validatePlaceOrderJSON = ajv.compile(require('../schema/01_placeOrder.schema.json'));
+        const validatePlaceOrderJSON = ajv.compile(require('../schema/01_placeOrder.schema'));
 
         let expectValidPlaceOrder = res => {
             expect(res).to.have.status(201);
             let isValidJSON = validatePlaceOrderJSON(res.body);
             let errors = (isValidJSON) ? null : JSON.stringify(validatePlaceOrderJSON.errors);
-            expect(isValid, errors).to.be.true;
+            expect(isValidJSON, errors).to.be.true;
         };
 
-        it('should return valid JSON for "order now"', function (done) {
+        it('should return 201 & valid JSON for immediate order', function (done) {
             utility.placeOrderNow(
                 stops.two,
                 res => {
@@ -67,7 +65,7 @@ describe('01. Place Order (POST /orders)', function () {
                 });
         });
 
-        it('should return valid JSON for "order later"', function (done) {
+        it('should return 201 & valid JSON for advanced order', function (done) {
             utility.placeOrderLater(
                 stops.two,
                 utility.getISOTimeNextDay(0, 0, 0),
@@ -83,7 +81,12 @@ describe('01. Place Order (POST /orders)', function () {
         let tests = [
             {fareType: 'normal', second: 'first', orderTime: expected.rates.normal.time.from, isLateNight: false}
             , {fareType: 'normal', second: 'last', orderTime: expected.rates.normal.time.to, isLateNight: false}
-            , {fareType: 'late night', second: 'first', orderTime: expected.rates.lateNight.time.from, isLateNight: true}
+            , {
+                fareType: 'late night',
+                second: 'first',
+                orderTime: expected.rates.lateNight.time.from,
+                isLateNight: true
+            }
             , {fareType: 'late night', second: 'last', orderTime: expected.rates.lateNight.time.to, isLateNight: true}
         ];
 
@@ -110,5 +113,22 @@ describe('01. Place Order (POST /orders)', function () {
                 );
             });
         });
-    })
+    });
+
+    describe.only('Verify invalid inputs', function () {
+        const validateErrorJSON = ajv.compile(require('../schema/99_error.schema'));
+        it('should not accept advanced order in the past', function (done) {
+            utility.placeOrderLater(
+                stops.two,
+                utility.getISOTimeOffsetFromPresent(-1, 'minute'),
+                res => {
+                    expect(res).to.have.status(400);
+                    let isValidJSON = validateErrorJSON(res.body);
+                    let errors = (isValidJSON) ? null : JSON.stringify(validateErrorJSON.errors);
+                    expect(isValidJSON, errors).to.be.true;
+                    done();
+                }
+            );
+        });
+    });
 });

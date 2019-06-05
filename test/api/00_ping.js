@@ -8,7 +8,7 @@ const expect = chai.expect;
 
 describe('00. Ping (GET /ping)', function() {
     describe('Verify pong', function() {
-        it('Should return pong message', function(done) {
+        it('should return pong message', function(done) {
             chai.request(config.server)
                 .get(config.apiPing)
                 .end(function (err, res) {

@@ -1,11 +1,11 @@
 const config = require('../config')
-    , chai = require('chai');
+    , chai = require('chai')
+    , moment = require('moment')
+;
 
 chai.use(require('chai-http'));
 
 const expect = chai.expect;
-
-// To help reduce repeating code, this module is intended to keep requests to APIs and their default checks in handy.
 
 module.exports = {
     placeOrderNow: function(stops, callback) {
@@ -53,5 +53,15 @@ module.exports = {
                 console.log('[utility] cancelOrder httpStatus=', res.status);
                 if (typeof callback === 'function') callback(res);
             });
+    },
+    getISOTimeNextDay: function (h, m, s) {
+        let isoString = moment().utcOffset(config.timezone).add(1, 'day').hour(h).minute(m).second(s).toISOString();
+        console.log('[utility] getISOTimeNextDay ==>', isoString);
+        return isoString;
+    },
+    getISOTimeYesterday: function (h, m, s) {
+        let isoString = moment().utcOffset(config.timezone).subtract(1, 'day').hour(h).minute(m).second(s).toISOString();
+        console.log('[utility] getISOTimeYesterday ==>', isoString);
+        return isoString;
     }
 };

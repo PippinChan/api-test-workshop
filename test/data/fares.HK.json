@@ -1,0 +1,48 @@
+{
+  "currency": "HKD",
+  "priceCompareThreshold": 0.01,
+  "normal": {
+    "minimum": {
+      "metre": 2000,
+      "fare": 20
+    },
+    "additional": {
+      "metre": 200,
+      "fare": 5
+    },
+    "time": {
+      "from": {
+        "hour": 5,
+        "minute": 0,
+        "second": 0
+      },
+      "to": {
+        "hour": 21,
+        "minute": 59,
+        "second": 59
+      }
+    }
+  },
+  "lateNight": {
+    "minimum": {
+      "metre": 2000,
+      "fare": 30
+    },
+    "additional": {
+      "metre": 200,
+      "fare": 8
+    },
+    "time": {
+      "from": {
+        "hour": 22,
+        "minute": 0,
+        "second": 0
+      },
+      "to": {
+        "hour": 4,
+        "minute": 59,
+        "second": 59
+      }
+    }
+  }
+}

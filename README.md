@@ -37,7 +37,7 @@ Before running tests, check whether information in `test/config.js` is correct.
 
 #### Notes:
 * As [discouraged by Mochajs.org](https://mochajs.org/#arrow-functions), ECMAScript 6 arrow functions are not used in test spec functions.
-
+* Test data is now stored in `test/data` directory. But some data can be sourced from the SUT itself, for example, error messages or fare tables.
 #### Assumptions
 * Server would not use number `0` as order ID.
 > **Result:** In 404 order not found tests, `0` is used as order ID.

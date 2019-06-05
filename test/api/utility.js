@@ -1,7 +1,6 @@
-const config = require('../config')
-    , chai = require('chai')
-    , moment = require('moment')
-;
+const config = require('../config');
+const chai = require('chai');
+const moment = require('moment');
 
 chai.use(require('chai-http'));
 
@@ -10,49 +9,96 @@ const expect = chai.expect;
 let lastSuccessfulOrderId = null;
 
 module.exports = {
-    placeOrderNow: (stops, callback) => {
+    /**
+     * @param   {object[]}  options.stops       list of GPS coordinates
+     *                                          e.g.
+     *                                          [{'lat':22.281939,'lng':114.158245},
+     *                                          {'lat':22.319263,'lng':114.169373}]
+     * @param   {function}  options.callback    to receive the response object from chai
+     */
+    placeOrderNow: options => {
         chai.request(config.server)
             .post(config.apiPlaceOrder)
             .send({
-                'stops': stops
+                'stops': options.stops
             })
             .end((err, res) => {
                 expect(err).to.be.null;
                 if (typeof res.body.id === 'number') lastSuccessfulOrderId = res.body.id;
-                if (typeof callback === 'function') callback(res);
+                if (typeof options.callback === 'function') options.callback(res);
             });
     },
-    placeOrderLater: (stops, orderAt, callback) => {
+    /**
+     * @param   {object[]}  options.stops       list of GPS coordinates
+     *                                          e.g.
+     *                                          [{'lat':22.281939,'lng':114.158245},
+     *                                          {'lat':22.319263,'lng':114.169373}]
+     * @param   {string}    options.orderAt     ISO string to represent time of order
+     *                                          e.g. '2018-09-03T13:00:00.000Z'
+     * @param   {function}  options.callback    to receive the response object from chai
+     */
+    placeOrderLater: options => {
         chai.request(config.server)
             .post(config.apiPlaceOrder)
             .send({
-                'stops': stops,
-                'orderAt': orderAt
+                'stops': options.stops,
+                'orderAt': options.orderAt
             })
             .end((err, res) => {
                 expect(err).to.be.null;
                 if (typeof res.body.id === 'number') lastSuccessfulOrderId = res.body.id;
-                if (typeof callback === 'function') callback(res);
+                if (typeof options.callback === 'function') options.callback(res);
             });
     },
-    cancelOrder: (orderId, callback) => {
+    /**
+     * @param   {number}    options.orderId     to cancel the order
+     * @param   {function}  options.callback    to receive the response object from chai
+     */
+    cancelOrder: options => {
         chai.request(config.server)
-            .put(config.apiCancelOrder(orderId))
+            .put(config.apiCancelOrder(options.orderId))
             .end((err, res) => {
                 expect(err).to.be.null;
-                if (typeof callback === 'function') callback(res);
+                if (typeof options.callback === 'function') options.callback(res);
             });
     },
-    cancelLastSuccessfullyPlacedOrder: (callback) => {
-        if (typeof lastSuccessfulOrderId === 'number') module.exports.cancelOrder(lastSuccessfulOrderId, callback);
-        else callback();
+    /**
+     * @param   {function}  options.callback    to receive the response object from chai
+     *                                          response is undefined if there is no previously successful order
+     */
+    cancelLastSuccessfullyPlacedOrder: options => {
+        if (typeof lastSuccessfulOrderId === 'number')
+            module.exports.cancelOrder({
+                orderId: lastSuccessfulOrderId,
+                callback: options.callback
+            });
+        else if (typeof options.callback === 'function') options.callback();
     },
-    getISOTimeNextDay: (h, m, s) => {
-        let isoString = moment().utcOffset(config.timezone).add(1, 'day').hour(h).minute(m).second(s).toISOString();
-        return isoString;
+    /**
+     * @param   {number}    options.hour
+     * @param   {number}    options.minute
+     * @param   {number}    options.second
+     * @returns {string}
+     */
+    getISOTimeNextDay: options => {
+        return moment()
+            .utcOffset(config.timezone)
+            .add(1, 'day')
+            .hour(options.hour)
+            .minute(options.minute)
+            .second(options.second)
+            .toISOString();
     },
-    getISOTimeOffsetFromPresent: (amount, unit) => {
-        let isoString = moment().utcOffset(config.timezone).add(amount, unit).toISOString();
-        return isoString;
+    /**
+     * @param   {number}    options.amount
+     * @param   {string}    options.unit
+     * @see     https://momentjs.com/docs/#/manipulating/add/
+     * @returns {string}
+     */
+    getISOTimeOffsetFromPresent: options => {
+        return moment()
+            .utcOffset(config.timezone)
+            .add(options.amount, options.unit)
+            .toISOString();
     }
 };

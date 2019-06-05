@@ -1,104 +1,91 @@
-const constant = require('../constants')
-    , chai = require('chai')
-    , ajv = new (require('ajv'))
-    , utility = require('./utility')
-;
+const chai = require('chai');
+const utility = require('./utility');
+const validator = require('../schema/JSONValidator');
+const places = require('../data/places');
+const fares = require('../data/fares.HK');
+const error = require('../data/errorMessages');
 
 chai.use(require('chai-http'));
-ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-06.json'));
-
 const expect = chai.expect;
-const expected = {
-    currency: 'HKD',
-    priceCompareThreshold: 0.01,
-    rates: {
-        normal: {
-            minimum: {metre: 2000, fare: 20},
-            additional: {metre: 200, fare: 5},
-            time: {
-                from: {hour: 5, minute: 0, second: 0},
-                to: {hour: 21, minute: 59, second: 59}
-            }
-        },
-        lateNight: {
-            minimum: {metre: 2000, fare: 30},
-            additional: {metre: 200, fare: 8},
-            time: {
-                from: {hour: 22, minute: 0, second: 0},
-                to: {hour: 4, minute: 59, second: 59}
-            }
-        },
-    }
-};
 
 const stops = {
-    two: [constant.place.centralStn, constant.place.tstStn],
-    three: [constant.place.kwaiChung8ContainerPort, constant.place.taiWaiTransportCityBldg, constant.place.shaTinGovOffices]
+    two: [places.centralStn, places.tstStn],
+    three: [places.kwaiChung8ContainerPort, places.taiWaiTransportCityBldg, places.shaTinGovOffices],
+    fromMacau: [places.studioCityMacau, places.tuenMunStn],
+    intoTheSea: [places.mongKokStn, places.southChinaSea]
 };
 
 describe('01. Place Order (POST /orders)', function () {
-    let createdOrderID;
-
-    afterEach(function (done) {
-        utility.cancelLastSuccessfullyPlacedOrder(_ => {
-            done();
+    let cancelLastSuccessfullyPlacedOrder = function (done) {
+        utility.cancelLastSuccessfullyPlacedOrder({
+            callback: () => {
+                done();
+            }
         });
-    });
+    };
 
     describe('Verify data schema', function () {
-        const validatePlaceOrderJSON = ajv.compile(require('../schema/01_placeOrder.schema'));
+        afterEach(cancelLastSuccessfullyPlacedOrder);
+        let tests = [
+            {
+                input: 'immediate order',
+                apiFunction: utility.placeOrderNow,
+                options: {
+                    stops: stops.two
+                },
+                expected: {
+                    status: 201,
+                    schema: validator.validatePlaceOrder
+                },
+            },
+            {
+                input: 'advanced order',
+                apiFunction: utility.placeOrderLater,
+                options: {
+                    stops: stops.two,
+                    orderAt: utility.getISOTimeNextDay({hour: 0, minute: 0, second: 0})
+                },
+                expected: {
+                    status: 201,
+                    schema: validator.validatePlaceOrder
+                },
+            }
+        ];
 
-        let expectValidPlaceOrder = res => {
-            expect(res).to.have.status(201);
-            let isValidJSON = validatePlaceOrderJSON(res.body);
-            let errors = (isValidJSON) ? null : JSON.stringify(validatePlaceOrderJSON.errors);
-            expect(isValidJSON, errors).to.be.true;
-        };
-
-        it('should return 201 & valid JSON for immediate order', function (done) {
-            utility.placeOrderNow(
-                stops.two,
-                res => {
-                    expectValidPlaceOrder(res);
-                    createdOrderID = res.body.id;
+        tests.forEach(test => {
+            it(`should return 201 & valid JSON for ${test.input}`, function (done) {
+                test.options.callback = resp => {
+                    validator.validateAPIResponse({
+                        res: resp,
+                        expectedStatus: test.expected.status,
+                        schemaValidator: test.expected.schema
+                    });
                     done();
-                });
-        });
-
-        it('should return 201 & valid JSON for advanced order', function (done) {
-            utility.placeOrderLater(
-                stops.two,
-                utility.getISOTimeNextDay(0, 0, 0),
-                res => {
-                    expectValidPlaceOrder(res);
-                    createdOrderID = res.body.id;
-                    done();
-                });
+                };
+                test.apiFunction(test.options);
+            });
         });
     });
 
-    describe('Verify price', function () {
+    describe('Verify fare', function () {
+        afterEach(cancelLastSuccessfullyPlacedOrder);
+
         let tests = [
-            {fareType: 'normal', second: 'first', orderTime: expected.rates.normal.time.from, isLateNight: false}
-            , {fareType: 'normal', second: 'last', orderTime: expected.rates.normal.time.to, isLateNight: false}
-            , {
-                fareType: 'late night',
-                second: 'first',
-                orderTime: expected.rates.lateNight.time.from,
-                isLateNight: true
-            }
-            , {fareType: 'late night', second: 'last', orderTime: expected.rates.lateNight.time.to, isLateNight: true}
+            {fareType: 'normal', second: 'first', orderTime: fares.normal.time.from, isLateNight: false},
+            {fareType: 'normal', second: 'last', orderTime: fares.normal.time.to, isLateNight: false},
+            {fareType: 'late night', second: 'first', orderTime: fares.lateNight.time.from, isLateNight: true},
+            {fareType: 'late night', second: 'last', orderTime: fares.lateNight.time.to, isLateNight: true}
         ];
 
-        tests.forEach(function (test) {
+        tests.forEach(test => {
             it(`should return correct ${test.fareType} fare in the ${test.second} second`, function (done) {
-                utility.placeOrderLater(
-                    stops.three,
-                    utility.getISOTimeNextDay(test.orderTime.hour, test.orderTime.minute, test.orderTime.second),
-                    res => {
+                utility.placeOrderLater({
+                    stops: stops.three,
+                    orderAt: utility.getISOTimeNextDay(test.orderTime),
+                    callback: res => {
                         let totalDistance = res.body.drivingDistancesInMeters.reduce((sum, meters) => sum + meters, 0);
                         let actualFare = Number.parseFloat(res.body.fare.amount);
-                        let rates = test.isLateNight ? expected.rates.lateNight : expected.rates.normal;
+                        let rates = test.isLateNight ? fares.lateNight : fares.normal;
 
                         let startingFare = rates.minimum.fare;
                         let additionalMetre = totalDistance - rates.minimum.metre;
@@ -107,28 +94,68 @@ describe('01. Place Order (POST /orders)', function () {
                         let expectedFare = startingFare + additionalFare;
                         let difference = Math.abs(expectedFare - actualFare);
 
-                        expect(difference).to.be.lessThan(expected.priceCompareThreshold);
+                        expect(difference).to.be.lessThan(fares.priceCompareThreshold);
                         done();
                     }
-                );
+                });
             });
         });
     });
 
-    describe.only('Verify invalid inputs', function () {
-        const validateErrorJSON = ajv.compile(require('../schema/99_error.schema'));
-        it('should not accept advanced order in the past', function (done) {
-            utility.placeOrderLater(
-                stops.two,
-                utility.getISOTimeOffsetFromPresent(-1, 'minute'),
-                res => {
-                    expect(res).to.have.status(400);
-                    let isValidJSON = validateErrorJSON(res.body);
-                    let errors = (isValidJSON) ? null : JSON.stringify(validateErrorJSON.errors);
-                    expect(isValidJSON, errors).to.be.true;
-                    done();
+    describe('Verify invalid inputs', function () {
+        let tests = [
+            {
+                input: 'advanced order in the past',
+                apiFunction: utility.placeOrderLater,
+                options: {
+                    stops: stops.two,
+                    orderAt: utility.getISOTimeOffsetFromPresent({amount: -1, unit: 'minute'})
+                },
+                expected: {
+                    error: error.orderBehindPresentTime,
+                    schema: validator.validateError
                 }
-            );
+            },
+            {
+                input: 'to pickup from outside Hong Kong',
+                apiFunction: utility.placeOrderNow,
+                options: {
+                    stops: stops.fromMacau
+                },
+                expected: {
+                    error: error.serviceUnavailable,
+                    schema: validator.validateError
+                }
+            },
+            // @pippinchan:
+            // I think the below case should be 503 instead of 201
+            // hence, I will keep this case failing.
+            {
+                input: 'to deliver into the sea',
+                apiFunction: utility.placeOrderNow,
+                options: {
+                    stops: stops.intoTheSea
+                },
+                expected: {
+                    error: error.serviceUnavailable,
+                    schema: validator.validateError
+                }
+            }
+        ];
+
+        tests.forEach(test => {
+            it(`should not accept ${test.input}`, function (done) {
+                test.options.callback = resp => {
+                    validator.validateAPIResponse({
+                        res: resp,
+                        expectedStatus: test.expected.error.status,
+                        schemaValidator: test.expected.schema
+                    });
+                    expect(resp.body.message).to.equal(test.expected.error.message);
+                    done();
+                };
+                test.apiFunction(test.options);
+            });
         });
     });
 });

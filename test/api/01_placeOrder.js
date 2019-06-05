@@ -79,7 +79,7 @@ describe('01. Place Order (POST /orders)', function () {
         });
     });
 
-    describe.only('Verify price', function () {
+    describe('Verify price', function () {
         let tests = [
             {fareType: 'normal', second: 'first', orderTime: expected.rates.normal.time.from, isLateNight: false}
             , {fareType: 'normal', second: 'last', orderTime: expected.rates.normal.time.to, isLateNight: false}

@@ -9,6 +9,8 @@ chai.use(require('chai-http'));
 const expect = chai.expect;
 
 const stops = {
+    zero: [],
+    one: [places.kwunTongStn],
     two: [places.centralStn, places.tstStn],
     three: [places.kwaiChung8ContainerPort, places.taiWaiTransportCityBldg, places.shaTinGovOffices],
     fromMacau: [places.studioCityMacau, places.tuenMunStn],
@@ -104,6 +106,28 @@ describe('01. Place Order (POST /orders)', function () {
 
     describe('Verify invalid inputs', function () {
         let tests = [
+            {
+                input: '0 stops',
+                apiFunction: utility.placeOrderNow,
+                options: {
+                    stops: stops.zero
+                },
+                expected: {
+                    error: error.stopsError,
+                    schema: validator.validateError
+                }
+            },
+            {
+                input: '1 stop',
+                apiFunction: utility.placeOrderNow,
+                options: {
+                    stops: stops.one
+                },
+                expected: {
+                    error: error.stopsError,
+                    schema: validator.validateError
+                }
+            },
             {
                 input: 'advanced order in the past',
                 apiFunction: utility.placeOrderLater,

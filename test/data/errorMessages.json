@@ -1,4 +1,8 @@
 {
+  "stopsError": {
+    "status": 400,
+    "message": "error in field(s): stops"
+  },
   "orderBehindPresentTime": {
     "status": 400,
     "message": "field orderAt is behind the present time"

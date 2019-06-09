@@ -2,7 +2,7 @@ const config = require('../config');
 const chai = require('chai');
 chai.use(require('chai-http'));
 
-const util = require('./utility');
+const util = require('./util');
 const validator = require('../schema/JSONValidator');
 const places = require('../data/places');
 const fares = require('../data/fares.HK');

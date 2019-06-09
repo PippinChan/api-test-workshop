@@ -5,20 +5,23 @@ ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-06.json'));
 const expect = chai.expect;
 
 module.exports = {
-    validatePlaceOrder: ajv.compile(require('./01_placeOrder.schema')),
-    validateError: ajv.compile(require('./99_error.schema')),
+
+    /** compiled ajv validator functions **/
+    PLACE_ORDER_SCHEMA: ajv.compile(require('./01_placeOrder.schema')),
+    EMPTY_SCHEMA: ajv.compile(require('./98_empty.schema')),
+    ERROR_SCHEMA: ajv.compile(require('./99_error.schema')),
 
     /**
-     * @param   {object}    options.res                 chai response object
-     * @param   {number}    options.expectedStatus      HTTP status number
-     * @param   {function}  options.schemaValidator     ajv schema validator function (one of the above)
+     * @param    {Object}   options.response    response object from chai
+     * @param    {number}   options.status      expected HTTP status code
+     * @param    {function} options.schema      one of the compiled ajv validator functions (see above section)
      */
-    validateAPIResponse: options => {
-        expect(options.res).to.have.status(options.expectedStatus);
-        let isValidJSON = options.schemaValidator(options.res.body);
-        let errors = (isValidJSON) ? null : JSON.stringify(options.schemaValidator.errors);
+    validateResponse: options => {
+        expect(options.response).to.have.status(options.status);
+        let isValidJSON = options.schema(options.response.body);
+        let errorMessage = (isValidJSON) ? '' : JSON.stringify(options.schema.errors);
 
         // if JSON is not valid, error definition from validator is printed
-        expect(isValidJSON, errors).to.be.true;
+        expect(isValidJSON, errorMessage).to.be.true;
     }
 };

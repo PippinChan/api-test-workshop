@@ -8,7 +8,12 @@ const expect = chai.expect;
 
 let lastSuccessfulOrderId = null;
 
-module.exports = {
+let util = {
+    /**
+     * @return  {object}    new chai request object to the server
+     */
+    newRequest: () => chai.request(config.server),
+
     /**
      * @param   {object[]}  options.stops       list of GPS coordinates
      *                                          e.g.
@@ -17,10 +22,10 @@ module.exports = {
      * @param   {function}  options.callback    to receive the response object from chai
      */
     placeOrderNow: options => {
-        chai.request(config.server)
+        util.newRequest()
             .post(config.apiPlaceOrder)
             .send({
-                'stops': options.stops
+                stops: options.stops
             })
             .end((err, res) => {
                 expect(err).to.be.null;
@@ -38,11 +43,11 @@ module.exports = {
      * @param   {function}  options.callback    to receive the response object from chai
      */
     placeOrderLater: options => {
-        chai.request(config.server)
+        util.newRequest()
             .post(config.apiPlaceOrder)
             .send({
-                'stops': options.stops,
-                'orderAt': options.orderAt
+                stops: options.stops,
+                orderAt: options.orderAt
             })
             .end((err, res) => {
                 expect(err).to.be.null;
@@ -55,7 +60,7 @@ module.exports = {
      * @param   {function}  options.callback    to receive the response object from chai
      */
     cancelOrder: options => {
-        chai.request(config.server)
+        util.newRequest()
             .put(config.apiCancelOrder(options.orderId))
             .end((err, res) => {
                 expect(err).to.be.null;
@@ -68,10 +73,11 @@ module.exports = {
      */
     cancelLastSuccessfullyPlacedOrder: options => {
         if (typeof lastSuccessfulOrderId === 'number')
-            module.exports.cancelOrder({
+            util.cancelOrder({
                 orderId: lastSuccessfulOrderId,
                 callback: options.callback
             });
+        // call the callback in case there is no last order
         else if (typeof options.callback === 'function') options.callback();
     },
     /**
@@ -102,3 +108,5 @@ module.exports = {
             .toISOString();
     }
 };
+
+module.exports = util;

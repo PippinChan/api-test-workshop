@@ -1,14 +1,21 @@
 {
+  "badRequest": {
+    "statusCode": 400,
+    "message": ""
+  },
   "stopsError": {
-    "status": 400,
+    "statusCode": 400,
     "message": "error in field(s): stops"
   },
   "orderBehindPresentTime": {
-    "status": 400,
+    "statusCode": 400,
     "message": "field orderAt is behind the present time"
   },
   "serviceUnavailable": {
-    "status": 503,
+    "statusCode": 503,
     "message": "Service Unavailable"
+  },
+  "methodNotAllowed": {
+    "statusCode": 405
   }
 }

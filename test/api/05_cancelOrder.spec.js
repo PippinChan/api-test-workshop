@@ -9,9 +9,9 @@ const expect = chai.expect;
 describe('05. API cancel order', function() {
     describe('PUT /orders/{orderID}/cancel', function() {
         it('Returns HTTP 404 if the order does not exist', function(done) {
-            chai.request(config.server)
+            chai.request(config.sampleAPI.server)
             // Pass MAX_SAFE_INTEGER in hope to guarantee ORDER_NOT_FOUND. Maybe there is a better way...
-                .put(config.apiCancelOrder(Number.MAX_SAFE_INTEGER))
+                .put(config.sampleAPI.cancelOrder(Number.MAX_SAFE_INTEGER))
                 .end((err, res) => {
                     expect(err).to.be.null;
                     expect(res).to.have.status(404);

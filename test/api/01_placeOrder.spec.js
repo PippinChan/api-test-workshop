@@ -3,254 +3,283 @@ const chai = require('chai');
 chai.use(require('chai-http'));
 
 const util = require('./util');
+const stops = util.stops;
+
 const validator = require('../schema/JSONValidator');
-const places = require('../data/places');
-const fares = require('../data/fares.HK');
+const rules = require('../data/rules.HK');
 const error = require('../data/errorMessages');
 
 const expect = chai.expect;
 
-const stops = {
-    zero: [],
-    one: [places.kwunTongStn],
-    two: [places.centralStn, places.tstStn],
-    two_near: [places.mongKokStn, places.tstStn],
-    three: [places.kwaiChung8ContainerPort, places.taiWaiTransportCityBldg, places.shaTinGovOffices],
-    fromMacau: [places.studioCityMacau, places.tuenMunStn],
-    intoTheSea: [places.mongKokStn, places.southChinaSea],
-    fromTheSea: [places.southChinaSea, places.mongKokStn]
-};
-
 describe('01. Place Order (POST /orders)', function () {
+  // @pippinchan: Current Lalamove site accepts maximum of 20 stops
+  let numberOfTooManyStops = rules.maximumStops + 1;
+  let tooManyStops = [];
+  for (let i = 0; i < numberOfTooManyStops; i++) tooManyStops.push(util.stops.three[i % 3]);
 
-    let newPostRequest = () => util.newRequest().post(config.apiPlaceOrder);
+  let tests = {
+    // @pippinchan: FIXME: Some of the tests below could be written in the unit test level instead
+    verifySchema: [
+      {
+        desc: 'immediate order',
+        data: {stops: stops.two},
+        expected: {statusCode: 201, schema: validator.PLACE_ORDER_SCHEMA}
+      },
+      {
+        desc: 'advanced order',
+        data: {stops: stops.two, orderAt: util.getISOTimeNextDay({h: 0, m: 0, s: 0})},
+        expected: {statusCode: 201, schema: validator.PLACE_ORDER_SCHEMA}
+      }
+    ],
+    verifyFare: [
+      {
+        desc: 'order in normal time, first second',
+        data: {stops: stops.three, orderAt: util.getISOTimeNextDay(rules.normal.time.from)},
+        expected: {isLateNightFare: false}
+      },
+      {
+        desc: 'order in normal time, last second',
+        data: {stops: stops.three, orderAt: util.getISOTimeNextDay(rules.normal.time.to)},
+        expected: {isLateNightFare: false}
+      },
+      {
+        desc: 'order in normal time, minimum fare',
+        data: {stops: stops.twoNear, orderAt: util.getISOTimeNextDay(rules.normal.time.from)},
+        expected: {isLateNightFare: false}
+      },
+      {
+        desc: 'order in late night time, first second',
+        data: {stops: stops.three, orderAt: util.getISOTimeNextDay(rules.lateNight.time.from)},
+        expected: {isLateNightFare: true}
+      },
+      {
+        desc: 'order in late night time, last second',
+        data: {stops: stops.three, orderAt: util.getISOTimeNextDay(rules.lateNight.time.to)},
+        expected: {isLateNightFare: true}
+      },
+      {
+        desc: 'order in late night time, minimum fare',
+        data: {stops: stops.twoNear, orderAt: util.getISOTimeNextDay(rules.lateNight.time.from)},
+        expected: {isLateNightFare: true}
+      }
+    ],
+    verifyInvalidInput: [
+      {
+        desc: 'GET request',
+        verb: util.VERB_GET,
+        expected: {error: error.general.methodNotAllowed, schema: validator.EMPTY_SCHEMA}
+      },
+      {
+        desc: 'PUT request',
+        verb: util.VERB_PUT,
+        expected: {error: error.general.methodNotAllowed, schema: validator.EMPTY_SCHEMA}
+      },
+      {
+        desc: 'PATCH request',
+        verb: util.VERB_PATCH,
+        expected: {error: error.general.methodNotAllowed, schema: validator.EMPTY_SCHEMA}
+      },
+      {
+        desc: 'DELETE request',
+        verb: util.VERB_DELETE,
+        expected: {error: error.general.methodNotAllowed, schema: validator.EMPTY_SCHEMA}
+      },
+      { // @pippinchan: FIXME: Missing error message
+        desc: '[FAIL] blank POST payload',
+        verb: util.VERB_POST,
+        data: '',
+        expected: {error: error.general.badRequest, schema: validator.ERROR_SCHEMA}
+      },
+      {
+        desc: 'empty JSON',
+        verb: util.VERB_POST,
+        data: {},
+        expected: {error: error.placeOrder.errorStops, schema: validator.ERROR_SCHEMA}
+      },
+      {
+        desc: 'missing required field (stops)',
+        verb: util.VERB_POST,
+        data: {stopz: stops.zero},
+        expected: {error: error.placeOrder.errorStops, schema: validator.ERROR_SCHEMA}
+      },
+      {
+        desc: 'no stops',
+        verb: util.VERB_POST,
+        data: {stops: stops.zero},
+        expected: {error: error.placeOrder.errorStops, schema: validator.ERROR_SCHEMA}
+      },
+      {
+        desc: '1 stop',
+        verb: util.VERB_POST,
+        data: {stops: stops.one},
+        expected: {error: error.placeOrder.errorStops, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: API allows too many stops
+        desc: `[FAIL] ${numberOfTooManyStops} stops`,
+        verb: util.VERB_POST,
+        data: {stops: tooManyStops},
+        expected: {error: error.placeOrder.errorStops, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: Missing error message
+        desc: '[FAIL] stops not being an array',
+        verb: util.VERB_POST,
+        data: {stops: '555'},
+        expected: {error: error.placeOrder.errorStops, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: This input might be acceptable because both lat, lng are still there
+        desc: '[FAIL] stops having invalid GPS coordinate in the array (not a lat-lng object)',
+        verb: util.VERB_POST,
+        data: {stops: [util.stops.three[0], {lat: 22.312291, lng: 114.226255, wrong: 114.226255}, util.stops.three[1]]},
+        expected: {error: error.placeOrder.errorStops, schema: validator.ERROR_SCHEMA}
+      },
+      {
+        desc: 'stops having invalid GPS coordinate in the array (missing lat)',
+        verb: util.VERB_POST,
+        data: {stops: [util.stops.three[0], {lrat: 22.5, lng: 22.2}, util.stops.three[1]]},
+        expected: {error: error.placeOrder.errorLng, schema: validator.ERROR_SCHEMA}
+      },
+      {
+        desc: 'stops having invalid GPS coordinate in the array (missing lng)',
+        verb: util.VERB_POST,
+        data: {stops: [util.stops.three[0], {lat: 22.5, long: 22.2}, util.stops.three[1]]},
+        expected: {error: error.placeOrder.lngError, schema: validator.ERROR_SCHEMA}
+      },
+      {
+        desc: 'stops having invalid GPS coordinate in the array (missing lat, lng)',
+        verb: util.VERB_POST,
+        data: {stops: [util.stops.three[0], {wrat: 22.5, wrong: 22.2}, util.stops.three[1]]},
+        expected: {error: error.placeOrder.errorLatLng, schema: validator.ERROR_SCHEMA}
+      },
+      {
+        desc: 'to pickup from outside Hong Kong',
+        verb: util.VERB_POST,
+        data: {stops: stops.fromMacau},
+        expected: {error: error.general.serviceUnavailable, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: Should not accept impossible locations
+        desc: '[FAIL] to deliver into the sea',
+        verb: util.VERB_POST,
+        data: {stops: stops.intoTheSea},
+        expected: {error: error.general.serviceUnavailable, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: Should not accept impossible locations
+        desc: '[FAIL] to pickup from the sea',
+        verb: util.VERB_POST,
+        data: {stops: stops.fromTheSea},
+        expected: {error: error.general.serviceUnavailable, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: Missing error message
+        desc: '[FAIL] orderAt is blank in advanced order',
+        verb: util.VERB_POST,
+        data: {stops: stops.two, orderAt: ''},
+        expected: {error: error.placeOrder.errorOrderAt, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: Missing error message
+        desc: '[FAIL] orderAt is not a string in advanced order',
+        verb: util.VERB_POST,
+        data: {stops: stops.two, orderAt: 5555},
+        expected: {error: error.placeOrder.errorOrderAt, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: Missing error message
+        desc: '[FAIL] orderAt is not a valid ISO timestamp in advanced order',
+        verb: util.VERB_POST,
+        data: {stops: stops.two, orderAt: '5555'},
+        expected: {error: error.placeOrder.errorOrderAt, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: Missing error message
+        desc: '[FAIL] orderAt cannot be parsed to correct time in advanced order',
+        verb: util.VERB_POST,
+        data: {stops: stops.two, orderAt: '2019-06-11T25:30:08Z'},
+        expected: {error: error.placeOrder.errorOrderAt, schema: validator.ERROR_SCHEMA}
+      },
+      {
+        desc: 'advanced order in the past',
+        verb: util.VERB_POST,
+        data: {stops: stops.two, orderAt: util.getISOTimeFromPresent({amount: -1, unit: 'minute'})},
+        expected: {error: error.placeOrder.orderBehindPresentTime, schema: validator.ERROR_SCHEMA}
+      }
+    ]
+  };
 
-    describe('Verify data schema', function () {
-        let tests = [
-            {
-                desc: 'immediate order',
-                request: newPostRequest().send({
-                    stops: stops.two
-                }),
-                expected: {
-                    statusCode: 201,
-                    schema: validator.PLACE_ORDER_SCHEMA
-                }
-            },
-            {
-                desc: 'advanced order',
-                request: newPostRequest().send({
-                    stops: stops.two,
-                    orderAt: util.getISOTimeNextDay({hour: 0, minute: 0, second: 0})
-                }),
-                expected: {
-                    statusCode: 201,
-                    schema: validator.PLACE_ORDER_SCHEMA
-                }
-            }
-        ];
-
-        tests.forEach(test => {
-            it(`should return 201 & valid JSON for ${test.desc}`, function (done) {
-                test.request.end((err, res) => {
-                    expect(err).to.be.null;
-                    validator.validateResponse({
-                        response: res,
-                        status: test.expected.statusCode,
-                        schema: test.expected.schema
-                    });
-                    done();
-                });
+  describe('Verify schema', function () {
+    let tc = 1;
+    tests.verifySchema.forEach(function (test) {
+      it(`${tc++}. should return ${test.expected.statusCode} & valid JSON for ${test.desc}`, function (done) {
+        util.sendRequest({
+          mocha: this,
+          title: 'Place order',
+          server: config.sampleAPI.server,
+          endpoint: config.sampleAPI.placeOrder,
+          verb: util.VERB_POST,
+          data: test.data,
+          callback: function (result) {
+            validator.validateResponse({
+              response: result.res,
+              status: test.expected.statusCode,
+              schema: test.expected.schema
             });
+            done();
+          }
         });
+      });
     });
+  });
 
-    describe('Verify fare', function () {
-        let tests = [
-            {
-                desc: 'order in normal time, first second',
-                stops: stops.three,
-                orderTime: fares.normal.time.from,
-                isLateNight: false
-            },
-            {
-                desc: 'order in normal time, last second',
-                stops: stops.three,
-                orderTime: fares.normal.time.to,
-                isLateNight: false
-            },
-            {
-                desc: 'order in normal time, minimum fare',
-                stops: stops.two_near,
-                orderTime: fares.normal.time.to,
-                isLateNight: false
-            },
-            {
-                desc: 'order in late night time, first second',
-                stops: stops.three,
-                orderTime: fares.lateNight.time.from,
-                isLateNight: true
-            },
-            {
-                desc: 'order in late night time, last second',
-                stops: stops.three,
-                orderTime: fares.lateNight.time.to,
-                isLateNight: true
-            },
-            {
-                desc: 'order in late night time, minimum fare',
-                stops: stops.two_near,
-                orderTime: fares.lateNight.time.to,
-                isLateNight: true
-            }
-        ];
+  describe('Verify fare', function () {
+    let tc = 1;
+    tests.verifyFare.forEach(function (test) {
+      it(`${tc++}. should return correct fare for ${test.desc}`, function (done) {
+        util.sendRequest({
+          mocha: this,
+          title: 'Place order',
+          server: config.sampleAPI.server,
+          endpoint: config.sampleAPI.placeOrder,
+          verb: util.VERB_POST,
+          data: test.data,
+          callback: function (result) {
+            let body = result.res.body;
+            let totalDistance = body.drivingDistancesInMeters.reduce((sum, meters) => sum + meters, 0);
+            let actualFare = Number.parseFloat(body.fare.amount);
+            let rates = test.expected.isLateNightFare ? rules.lateNight : rules.normal;
+            let startingFare = rates.minimum.fare;
+            let additionalMetre = totalDistance - rates.minimum.metre;
+            let additionalFare = Math.max(0, additionalMetre / rates.additional.metre * rates.additional.fare);
+            let expectedFare = startingFare + additionalFare;
+            let difference = Math.abs(expectedFare - actualFare);
+            expect(difference).to.be.lessThan(rules.priceCompareThreshold);
+            done();
+          }
+        });
+      });
+    });
+  });
 
-        tests.forEach(test => {
-            it(`should return correct fare for ${test.desc}`, function (done) {
-                util.placeOrderLater({
-                    stops: test.stops,
-                    orderAt: util.getISOTimeNextDay(test.orderTime),
-                    callback: res => {
-                        let totalDistance = res.body.drivingDistancesInMeters.reduce((sum, meters) => sum + meters, 0);
-                        let actualFare = Number.parseFloat(res.body.fare.amount);
-                        let rates = test.isLateNight ? fares.lateNight : fares.normal;
-
-                        let startingFare = rates.minimum.fare;
-                        let additionalMetre = totalDistance - rates.minimum.metre;
-                        let additionalFare = Math.max(0, additionalMetre / rates.additional.metre * rates.additional.fare);
-
-                        let expectedFare = startingFare + additionalFare;
-                        let difference = Math.abs(expectedFare - actualFare);
-
-                        expect(difference).to.be.lessThan(fares.priceCompareThreshold);
-                        done();
-                    }
-                });
+  describe('Verify negative input', function () {
+    let tc = 1;
+    tests.verifyInvalidInput.forEach(function (test) {
+      it(`${tc++}. should not accept ${test.desc}`, function (done) {
+        util.sendRequest({
+          mocha: this,
+          title: 'Place order',
+          server: config.sampleAPI.server,
+          endpoint: config.sampleAPI.placeOrder,
+          verb: test.verb,
+          data: test.data,
+          callback: function (result) {
+            validator.validateResponse({
+              response: result.res,
+              status: test.expected.error.statusCode,
+              schema: test.expected.schema
             });
-        });
-    });
-
-    describe('Verify invalid inputs', function () {
-        let tests = [
-            {
-                desc: 'GET request',
-                request: util.newRequest().get(config.apiPlaceOrder),
-                expected: {
-                    schema: validator.EMPTY_SCHEMA,
-                    error: error.methodNotAllowed
-                }
-            },
-            {
-                desc: 'PUT request',
-                request: util.newRequest().put(config.apiPlaceOrder),
-                expected: {
-                    schema: validator.EMPTY_SCHEMA,
-                    error: error.methodNotAllowed
-                }
-            },
-            {
-                desc: 'PATCH request',
-                request: util.newRequest().patch(config.apiPlaceOrder),
-                expected: {
-                    schema: validator.EMPTY_SCHEMA,
-                    error: error.methodNotAllowed
-                }
-            },
-            {
-                desc: 'DELETE request',
-                request: util.newRequest().delete(config.apiPlaceOrder),
-                expected: {
-                    schema: validator.EMPTY_SCHEMA,
-                    error: error.methodNotAllowed
-                }
-            },
-            {
-                desc: 'blank POST payload',
-                request: newPostRequest().send(''),
-                expected: {
-                    schema: validator.ERROR_SCHEMA,
-                    error: error.badRequest
-                }
-            },
-            {
-                desc: '0 stops',
-                request: newPostRequest().send({
-                    stops: stops.zero
-                }),
-                expected: {
-                    schema: validator.ERROR_SCHEMA,
-                    error: error.stopsError
-                }
-            },
-            {
-                desc: '1 stop',
-                request: newPostRequest().send({
-                    stops: stops.one
-                }),
-                expected: {
-                    schema: validator.ERROR_SCHEMA,
-                    error: error.stopsError
-                }
-            },
-            {
-                desc: 'advanced order in the past',
-                request: newPostRequest().send({
-                    stops: stops.two,
-                    orderAt: util.getISOTimeOffsetFromPresent({amount: -1, unit: 'minute'})
-                }),
-                expected: {
-                    schema: validator.ERROR_SCHEMA,
-                    error: error.orderBehindPresentTime
-                }
-            },
-            {
-                desc: 'to pickup from outside Hong Kong',
-                request: newPostRequest().send({
-                    stops: stops.fromMacau
-                }),
-                expected: {
-                    schema: validator.ERROR_SCHEMA,
-                    error: error.serviceUnavailable
-                }
-            },
-            // @pippinchan:
-            // I think the 2 cases below should be 503 instead of 201. Hence I will leave them failing for now.
-            {
-                desc: 'to deliver into the sea',
-                request: newPostRequest().send({
-                    stops: stops.intoTheSea
-                }),
-                expected: {
-                    schema: validator.ERROR_SCHEMA,
-                    error: error.serviceUnavailable
-                }
-            },
-            {
-                desc: 'to pickup from the sea',
-                request: newPostRequest().send({
-                    stops: stops.fromTheSea
-                }),
-                expected: {
-                    schema: validator.ERROR_SCHEMA,
-                    error: error.serviceUnavailable
-                }
+            if (test.expected.error.message !== undefined) {
+              let errorMessage = result.res.body.message;
+              expect(errorMessage, '(error message should not be empty)').not.to.be.empty;
+              expect(errorMessage, '(returning unexpected error message)').to.equal(test.expected.error.message);
             }
-        ];
-
-        tests.forEach(test => {
-            it(`should not accept ${test.desc}`, function (done) {
-                test.request.end((err, res) => {
-                    expect(err).to.be.null;
-                    validator.validateResponse({
-                        response: res,
-                        status: test.expected.error.statusCode,
-                        schema: test.expected.schema
-                    });
-                    if (test.expected.error.message !== undefined)
-                        expect(res.body.message).to.equal(test.expected.error.message);
-                    done();
-                });
-            });
+            done();
+          }
         });
+      });
     });
+  });
 });

@@ -1,5 +1,6 @@
 {
   "currency": "HKD",
+  "maximumStops": 20,
   "priceCompareThreshold": 0.01,
   "normal": {
     "minimum": {
@@ -12,14 +13,14 @@
     },
     "time": {
       "from": {
-        "hour": 5,
-        "minute": 0,
-        "second": 0
+        "h": 5,
+        "m": 0,
+        "s": 0
       },
       "to": {
-        "hour": 21,
-        "minute": 59,
-        "second": 59
+        "h": 21,
+        "m": 59,
+        "s": 59
       }
     }
   },
@@ -34,14 +35,14 @@
     },
     "time": {
       "from": {
-        "hour": 22,
-        "minute": 0,
-        "second": 0
+        "h": 22,
+        "m": 0,
+        "s": 0
       },
       "to": {
-        "hour": 4,
-        "minute": 59,
-        "second": 59
+        "h": 4,
+        "m": 59,
+        "s": 59
       }
     }
   }

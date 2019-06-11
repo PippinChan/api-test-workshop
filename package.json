@@ -4,7 +4,7 @@
   "description": "",
   "main": "",
   "scripts": {
-    "test": "mocha --recursive --reporter mochawesome"
+    "test": "mocha --recursive --reporter mochawesome --reporter-options enableCode=false"
   },
   "author": "",
   "license": "ISC",

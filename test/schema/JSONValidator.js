@@ -12,9 +12,9 @@ module.exports = {
     ERROR_SCHEMA: ajv.compile(require('./99_error.schema')),
 
     /**
-     * @param    {Object}   options.response    response object from chai
-     * @param    {number}   options.status      expected HTTP status code
-     * @param    {function} options.schema      one of the compiled ajv validator functions (see above section)
+     * @param    {Object}       options.response    response object from chai
+     * @param    {Number}       options.status      expected HTTP status code
+     * @param    {Function}     options.schema      one of the compiled ajv validator functions (see above section)
      */
     validateResponse: options => {
         expect(options.response).to.have.status(options.status);
@@ -22,6 +22,6 @@ module.exports = {
         let errorMessage = (isValidJSON) ? '' : JSON.stringify(options.schema.errors);
 
         // if JSON is not valid, error definition from validator is printed
-        expect(isValidJSON, errorMessage).to.be.true;
+        expect(isValidJSON, '(JSON schema is not as expected) ' + errorMessage).to.be.true;
     }
 };

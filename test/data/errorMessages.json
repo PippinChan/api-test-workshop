@@ -1,21 +1,41 @@
 {
-  "badRequest": {
-    "statusCode": 400,
-    "message": ""
+  "general": {
+    "badRequest": {
+      "statusCode": 400,
+      "message": "--- This should have an error message ---"
+    },
+    "methodNotAllowed": {
+      "statusCode": 405
+    },
+    "serviceUnavailable": {
+      "statusCode": 503,
+      "message": "Service Unavailable"
+    }
   },
-  "stopsError": {
-    "statusCode": 400,
-    "message": "error in field(s): stops"
-  },
-  "orderBehindPresentTime": {
-    "statusCode": 400,
-    "message": "field orderAt is behind the present time"
-  },
-  "serviceUnavailable": {
-    "statusCode": 503,
-    "message": "Service Unavailable"
-  },
-  "methodNotAllowed": {
-    "statusCode": 405
+  "placeOrder": {
+    "errorStops": {
+      "statusCode": 400,
+      "message": "error in field(s): stops"
+    },
+    "errorLng": {
+      "statusCode": 400,
+      "message": "error in field(s): lat"
+    },
+    "lngError": {
+      "statusCode": 400,
+      "message": "error in field(s): lng"
+    },
+    "errorLatLng": {
+      "statusCode": 400,
+      "message": "error in field(s): lat, lng"
+    },
+    "errorOrderAt": {
+      "statusCode": 400,
+      "message": "error in field(s): orderAt"
+    },
+    "orderBehindPresentTime": {
+      "statusCode": 400,
+      "message": "field orderAt is behind the present time"
+    }
   }
 }

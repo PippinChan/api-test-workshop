@@ -1,22 +1,27 @@
-const config = require('../config')
-    , chai = require('chai')
-    , chaiHttp = require('chai-http');
+const config = require('../config');
+const chai = require('chai');
+chai.use(require('chai-http'));
 
-chai.use(chaiHttp);
+const util = require('./util');
 
 const expect = chai.expect;
 
-describe('00. Ping (GET /ping)', function() {
-    describe('Verify pong', function() {
-        it('should return pong message', function(done) {
-            chai.request(config.server)
-                .get(config.apiPing)
-                .end((err, res) => {
-                    expect(err).to.be.null;
-                    expect(res).to.have.status(200);
-                    expect(res.body.msg).to.be.equal('pong');
-                    done();
-                });
-        });
+describe('00. Ping (GET /ping)', function () {
+  describe('Verify pong', function () {
+    let tc = 1;
+    it(`${tc}. should return pong message`, function (done) {
+      util.sendRequest({
+        mocha: this,
+        title: 'Ping',
+        server: config.sampleAPI.server,
+        endpoint: config.sampleAPI.ping,
+        verb: util.VERB_GET,
+        callback: function (result) {
+          expect(result.res).to.have.status(200);
+          expect(result.res.body.msg).to.be.equal('pong');
+          done();
+        }
+      });
     });
+  });
 });

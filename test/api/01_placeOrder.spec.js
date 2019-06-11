@@ -18,7 +18,6 @@ describe('01. Place Order (POST /orders)', function () {
   for (let i = 0; i < numberOfTooManyStops; i++) tooManyStops.push(util.stops.three[i % 3]);
 
   let tests = {
-    // @pippinchan: FIXME: Some of the tests below could be written in the unit test level instead
     verifySchema: [
       {
         desc: 'immediate order',
@@ -63,7 +62,7 @@ describe('01. Place Order (POST /orders)', function () {
         expected: {isLateNightFare: true}
       }
     ],
-    verifyInvalidInput: [
+    verifyNegativeInput: [
       {
         desc: 'GET request',
         verb: util.VERB_GET,
@@ -88,7 +87,7 @@ describe('01. Place Order (POST /orders)', function () {
         desc: '[FAIL] blank POST payload',
         verb: util.VERB_POST,
         data: '',
-        expected: {error: error.general.badRequest, schema: validator.ERROR_SCHEMA}
+        expected: {error: error.general.blankPOSTPayload, schema: validator.ERROR_SCHEMA}
       },
       {
         desc: 'empty JSON',
@@ -214,9 +213,7 @@ describe('01. Place Order (POST /orders)', function () {
           data: test.data,
           callback: function (result) {
             validator.validateResponse({
-              response: result.res,
-              status: test.expected.statusCode,
-              schema: test.expected.schema
+              response: result.res, schema: test.expected.schema, status: test.expected.statusCode
             });
             done();
           }
@@ -246,7 +243,7 @@ describe('01. Place Order (POST /orders)', function () {
             let additionalFare = Math.max(0, additionalMetre / rates.additional.metre * rates.additional.fare);
             let expectedFare = startingFare + additionalFare;
             let difference = Math.abs(expectedFare - actualFare);
-            expect(difference).to.be.lessThan(rules.priceCompareThreshold);
+            expect(difference, '(a potential fare discrepancy detected)').to.be.lessThan(rules.priceCompareThreshold);
             done();
           }
         });
@@ -256,7 +253,7 @@ describe('01. Place Order (POST /orders)', function () {
 
   describe('Verify negative input', function () {
     let tc = 1;
-    tests.verifyInvalidInput.forEach(function (test) {
+    tests.verifyNegativeInput.forEach(function (test) {
       it(`${tc++}. should not accept ${test.desc}`, function (done) {
         util.sendRequest({
           mocha: this,
@@ -266,16 +263,10 @@ describe('01. Place Order (POST /orders)', function () {
           verb: test.verb,
           data: test.data,
           callback: function (result) {
-            validator.validateResponse({
-              response: result.res,
-              status: test.expected.error.statusCode,
-              schema: test.expected.schema
+            util.validateErrorResponse({
+              response: result.res, schema: test.expected.schema, status: test.expected.error.statusCode,
+              errorMessage: test.expected.error.message
             });
-            if (test.expected.error.message !== undefined) {
-              let errorMessage = result.res.body.message;
-              expect(errorMessage, '(error message should not be empty)').not.to.be.empty;
-              expect(errorMessage, '(returning unexpected error message)').to.equal(test.expected.error.message);
-            }
             done();
           }
         });

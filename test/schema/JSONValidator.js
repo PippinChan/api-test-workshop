@@ -17,7 +17,7 @@ module.exports = {
      * @param    {Function}     options.schema      one of the compiled ajv validator functions (see above section)
      */
     validateResponse: options => {
-        expect(options.response).to.have.status(options.status);
+        expect(options.response, '(HTTP status code is not as expected)').to.have.status(options.status);
         let isValidJSON = options.schema(options.response.body);
         let errorMessage = (isValidJSON) ? '' : JSON.stringify(options.schema.errors);
 

@@ -1,6 +1,14 @@
 {
   "general": {
-    "badRequest": {
+    "blankPOSTPayload": {
+      "statusCode": 400,
+      "message": "--- This should have an error message ---"
+    },
+    "orderNotFound": {
+      "statusCode": 404,
+      "message": "ORDER_NOT_FOUND"
+    },
+    "invalidOrderId": {
       "statusCode": 400,
       "message": "--- This should have an error message ---"
     },

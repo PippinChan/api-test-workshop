@@ -1,27 +1,83 @@
-const config = require('../config')
-    , chai = require('chai')
-    , chaiHttp = require('chai-http');
+const config = require('../config');
+const chai = require('chai');
+chai.use(require('chai-http'));
 
-chai.use(chaiHttp);
+const util = require('./util');
+
+const validator = require('../schema/JSONValidator');
+const error = require('../data/errorMessages');
 
 const expect = chai.expect;
 
-describe('03. API take order', function() {
-    describe('PUT /orders/{orderID}/take', function() {
-        it('Returns HTTP 404 if the order does not exist', function(done) {
-            chai.request(config.sampleAPI.server)
-            // @pippinchan: [Assumption] Server would not 0 as order ID, so used 0 as NOT_FOUND order
-                .put(config.sampleAPI.takeOrder(0))
-                .end((err, res) => {
-                    expect(err).to.be.null;
-                    expect(res).to.have.status(404);
-                    expect(res.body).to.be.an('object');
+describe('03. Take Order (PUT /orders/{orderID}/take)', function () {
+  let tests = {
+    verifyNegativeInput: [
+      {
+        desc: 'POST request',
+        endpoint: config.sampleAPI.takeOrder(0),
+        verb: util.VERB_POST,
+        data: '',
+        expected: {error: error.general.methodNotAllowed, schema: validator.EMPTY_SCHEMA}
+      },
+      {
+        desc: 'GET request',
+        endpoint: config.sampleAPI.takeOrder(0),
+        verb: util.VERB_GET,
+        expected: {error: error.general.methodNotAllowed, schema: validator.EMPTY_SCHEMA}
+      },
+      {
+        desc: 'PATCH request',
+        endpoint: config.sampleAPI.takeOrder(0),
+        verb: util.VERB_PATCH,
+        expected: {error: error.general.methodNotAllowed, schema: validator.EMPTY_SCHEMA}
+      },
+      {
+        desc: 'DELETE request',
+        endpoint: config.sampleAPI.takeOrder(0),
+        verb: util.VERB_DELETE,
+        expected: {error: error.general.methodNotAllowed, schema: validator.EMPTY_SCHEMA}
+      },
+      { // @pippinchan: [Assumption] Server would not use 0 as order ID, so used 0 as NOT_FOUND order
+        desc: 'nonexistent order ID',
+        endpoint: config.sampleAPI.takeOrder(0),
+        verb: util.VERB_PUT,
+        expected: {error: error.general.orderNotFound, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: undefined endpoint?
+        desc: '[FAIL] negative number order ID',
+        endpoint: config.sampleAPI.takeOrder(-1),
+        verb: util.VERB_GET,
+        expected: {error: error.general.orderNotFound, schema: validator.ERROR_SCHEMA}
+      },
+      { // @pippinchan: FIXME: undefined endpoint?
+        desc: '[FAIL] string order ID',
+        endpoint: config.sampleAPI.takeOrder('abc'),
+        verb: util.VERB_GET,
+        expected: {error: error.general.invalidOrderId, schema: validator.ERROR_SCHEMA}
+      },
+    ]
+  };
 
-                    // expect ORDER_NOT_FOUND to be a custom message for now
-                    expect(res.body).to.have.all.keys('message');
-                    expect(res.body.message).to.be.a('string');
-                    done();
-                });
+  describe('Verify negative input', function () {
+    let tc = 1;
+    tests.verifyNegativeInput.forEach(function (test) {
+      it(`${tc++}. should not accept ${test.desc}`, function (done) {
+        util.sendRequest({
+          mocha: this,
+          title: 'Take order',
+          server: config.sampleAPI.server,
+          endpoint: test.endpoint,
+          verb: test.verb,
+          data: test.data,
+          callback: function (result) {
+            util.validateErrorResponse({
+              response: result.res, schema: test.expected.schema, status: test.expected.error.statusCode,
+              errorMessage: test.expected.error.message
+            });
+            done();
+          }
         });
+      });
     });
+  });
 });

@@ -30,7 +30,8 @@ Before running tests, check whether information in `test/config.js` is correct.
 ## iii. Viewing Reports
 - Immediately after test run finishes the summary and case-by-case results are printed in console.
 - Additionally, HTML report is generated under `mochawesome-report/` directory. \
-![](screenshots/report_dir.png) \
+![](screenshots/report_dir.png)
+- In HTML report, actual requests & response could be checked by expanding each test case. \
 ![](screenshots/report_html.png)
 
 -----
@@ -38,6 +39,7 @@ Before running tests, check whether information in `test/config.js` is correct.
 #### Notes:
 * As [discouraged by Mochajs.org](https://mochajs.org/#arrow-functions), ECMAScript 6 arrow functions are not used in test spec functions.
 * Test data is now stored in `test/data` directory. But some data can be sourced from the SUT itself, for example, error messages or fare tables.
+* As some API results are questionable, some tests are left failed with comments in the code.
 #### Assumptions
 * Server would not use number `0` as order ID.
 > **Result:** In 404 order not found tests, `0` is used as order ID.

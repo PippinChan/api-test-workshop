@@ -26,7 +26,7 @@ let util = {
     fromTheSea: [places.southChinaSea, places.mongKokStn]
   },
   /**
-   * HTTP verbs
+   * {HTTPVerbs}
    */
   VERB_GET: 'get',
   VERB_POST: 'post',
@@ -34,8 +34,24 @@ let util = {
   VERB_PATCH: 'patch',
   VERB_DELETE: 'delete',
   /**
-   * Send an API request to the server
-   * while keeping the context of this request for reporting / investigation purposes
+   * {OrderSequences}
+   */
+  SEQ_PLACE: 'place',
+  SEQ_TAKE: 'take',
+  SEQ_COMPLETE: 'complete',
+  SEQ_CANCEL: 'cancel',
+  /**
+   * {OrderStatuses}
+   */
+  STATUS_ASSIGNING: 'ASSIGNING',
+  STATUS_ONGOING: 'ONGOING',
+  STATUS_COMPLETED: 'COMPLETED',
+  STATUS_CANCELLED: 'CANCELLED',
+  /**
+   * Send an API request to the server,
+   * while keeping the context of this request in mochawesome for reporting / investigation purposes.
+   *
+   * Assertion error will be thrown if chai's error object is received.
    *
    * @param   {Object}    options.mocha       Mocha's test object, referred to by `this` inside the test function
    * @param   {String}    options.title       title to be printed in the context
@@ -43,37 +59,75 @@ let util = {
    * @param   {String}    options.verb        HTTP verb (get|post|put|patch|delete)
    * @param   {String}    options.endpoint    server's endpoint
    * @param   {Object}    [options.data]      payload to send with the request
-   * @param   {Function}  [options.callback]  callback to receive result of this request
+   *
+   * @return  {Promise}   res                 chai's response subject when it is received
    */
   sendRequest: options => {
-    let req = chai.request(options.server)[options.verb](options.endpoint);
-    // record the request context
-    let reqContext = {
-      server: options.server,
-      verb: options.verb,
-      endpoint: options.endpoint
-    };
-    if (typeof options.data === 'object') {
-      req.send(options.data);
-      reqContext.data = JSON.stringify(options.data);
-    }
-    // record the response context, then trigger the callback
-    req.end(function (err, res) {
-      expect(err, '(a potential network error occurred)').to.be.null;
-      let resContext = {
-        status: res.status,
-        body: JSON.stringify(res.body)
+    return new Promise(resolve => {
+      let req = chai.request(options.server)[options.verb](options.endpoint);
+      // record the request context
+      let reqContext = {
+        server: options.server,
+        verb: options.verb,
+        endpoint: options.endpoint
       };
-      addContext(options.mocha, {title: `${options.title} - Request`, value: reqContext});
-      addContext(options.mocha, {title: `${options.title} - Response`, value: resContext});
-
-      // triggering part
-      if (typeof options.callback === 'function') options.callback({
-        reqContext: reqContext,
-        resContext: resContext,
-        res: res
+      if (typeof options.data === 'object') {
+        req.send(options.data);
+        reqContext.data = JSON.stringify(options.data);
+      }
+      // record the response context, then trigger the callback
+      req.end(function (err, res) {
+        expect(err, '(a potential network error occurred)').to.be.null;
+        let resContext = {
+          status: res.status,
+          body: JSON.stringify(res.body)
+        };
+        addContext(options.mocha, {title: `${options.title} - Request`, value: reqContext});
+        addContext(options.mocha, {title: `${options.title} - Response`, value: resContext});
+        // return the chai response
+        resolve(res);
       });
     });
+  },
+  /**
+   * Make calls to the API in sequence.
+   * In case a potential network error is received, this function will not proceed with the next call.
+   *
+   * Note:
+   * - This function will automatically pull URL and endpoints from the {config.sampleAPI} object.
+   * - For place order, as it is not the focus of the test, it is defaulted to immediate order with {stops.two} points.
+   *
+   * @param   {Object}    options.mocha     Mocha's test object, referred to by `this` inside the test function
+   * @param   {String[]}  options.sequence  sequence of API calls, see {OrderSequences}
+   *
+   * @returns {Object[]}  result            array referring to chai's response objects in sequence returned
+   */
+  sendRequests: options => {
+    let orderID = null;
+    let result = [];
+
+    let i = 0;
+    while (i < options.sequence.length) {
+      let thisSequence = options.sequence[i];
+      if (thisSequence !== util.SEQ_PLACE && orderID === null) {
+        throw '[Invalid sequence] Sequence must start with place order';
+      }
+      let requestOptions = {
+        mocha: options.mocha,
+        title: thisSequence,
+        server: config.sampleAPI.server
+      };
+      switch (thisSequence) {
+        case util.SEQ_PLACE:
+          requestOptions.verb = util.VERB_POST;
+          requestOptions.endpoint = config.sampleAPI.placeOrder;
+          requestOptions.data = {stops: util.stops.two};
+          break;
+      }
+      i++;
+    }
+
+    return result;
   },
   /**
    * @param   {Number}    options.h   time of day (hour)

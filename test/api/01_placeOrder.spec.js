@@ -203,20 +203,17 @@ describe('01. Place Order (POST /orders)', function () {
   describe('Verify schema', function () {
     let tc = 1;
     tests.verifySchema.forEach(function (test) {
-      it(`${tc++}. should return ${test.expected.statusCode} & valid JSON for ${test.desc}`, function (done) {
-        util.sendRequest({
+      it(`${tc++}. should return ${test.expected.statusCode} & valid JSON for ${test.desc}`, async function () {
+        let res = await util.sendRequest({
           mocha: this,
           title: 'Place order',
           server: config.sampleAPI.server,
           endpoint: config.sampleAPI.placeOrder,
           verb: util.VERB_POST,
-          data: test.data,
-          callback: function (result) {
-            validator.validateResponse({
-              response: result.res, schema: test.expected.schema, status: test.expected.statusCode
-            });
-            done();
-          }
+          data: test.data
+        });
+        validator.validateResponse({
+          response: res, schema: test.expected.schema, status: test.expected.statusCode
         });
       });
     });
@@ -225,28 +222,24 @@ describe('01. Place Order (POST /orders)', function () {
   describe('Verify fare', function () {
     let tc = 1;
     tests.verifyFare.forEach(function (test) {
-      it(`${tc++}. should return correct fare for ${test.desc}`, function (done) {
-        util.sendRequest({
+      it(`${tc++}. should return correct fare for ${test.desc}`, async function () {
+        let res = await util.sendRequest({
           mocha: this,
           title: 'Place order',
           server: config.sampleAPI.server,
           endpoint: config.sampleAPI.placeOrder,
           verb: util.VERB_POST,
           data: test.data,
-          callback: function (result) {
-            let body = result.res.body;
-            let totalDistance = body.drivingDistancesInMeters.reduce((sum, meters) => sum + meters, 0);
-            let actualFare = Number.parseFloat(body.fare.amount);
-            let rates = test.expected.isLateNightFare ? rules.lateNight : rules.normal;
-            let startingFare = rates.minimum.fare;
-            let additionalMetre = totalDistance - rates.minimum.metre;
-            let additionalFare = Math.max(0, additionalMetre / rates.additional.metre * rates.additional.fare);
-            let expectedFare = startingFare + additionalFare;
-            let difference = Math.abs(expectedFare - actualFare);
-            expect(difference, '(a potential fare discrepancy detected)').to.be.lessThan(rules.priceCompareThreshold);
-            done();
-          }
         });
+        let totalDistance = res.body.drivingDistancesInMeters.reduce((sum, meters) => sum + meters, 0);
+        let actualFare = Number.parseFloat(res.body.fare.amount);
+        let rates = test.expected.isLateNightFare ? rules.lateNight : rules.normal;
+        let startingFare = rates.minimum.fare;
+        let additionalMetre = totalDistance - rates.minimum.metre;
+        let additionalFare = Math.max(0, additionalMetre / rates.additional.metre * rates.additional.fare);
+        let expectedFare = startingFare + additionalFare;
+        let difference = Math.abs(expectedFare - actualFare);
+        expect(difference, '(a potential fare discrepancy detected)').to.be.lessThan(rules.priceCompareThreshold);
       });
     });
   });
@@ -254,23 +247,21 @@ describe('01. Place Order (POST /orders)', function () {
   describe('Verify negative input', function () {
     let tc = 1;
     tests.verifyNegativeInput.forEach(function (test) {
-      it(`${tc++}. should not accept ${test.desc}`, function (done) {
-        util.sendRequest({
+      it(`${tc++}. should not accept ${test.desc}`, async function () {
+        let res = await util.sendRequest({
           mocha: this,
           title: 'Place order',
           server: config.sampleAPI.server,
           endpoint: config.sampleAPI.placeOrder,
           verb: test.verb,
-          data: test.data,
-          callback: function (result) {
-            util.validateErrorResponse({
-              response: result.res, schema: test.expected.schema, status: test.expected.error.statusCode,
-              errorMessage: test.expected.error.message
-            });
-            done();
-          }
+          data: test.data
+        });
+        util.validateErrorResponse({
+          response: res, schema: test.expected.schema, status: test.expected.error.statusCode,
+          errorMessage: test.expected.error.message
         });
       });
     });
   });
 });
+

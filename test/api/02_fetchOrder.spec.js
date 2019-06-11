@@ -11,6 +11,28 @@ const expect = chai.expect;
 
 describe('02. Fetch Order (GET /orders/{orderID})', function () {
   let tests = {
+    verifyOrderFlows: [
+      {
+        sequence: [util.SEQ_PLACE],
+        expected: {lastStatus: util.STATUS_ASSIGNING}
+      },
+      {
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE],
+        expected: {lastStatus: util.STATUS_ONGOING}
+      },
+      {
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_COMPLETE],
+        expected: {lastStatus: util.STATUS_COMPLETED}
+      },
+      {
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_CANCEL],
+        expected: {lastStatus: util.STATUS_CANCELLED}
+      },
+      {
+        sequence: [util.SEQ_PLACE, util.SEQ_CANCEL],
+        expected: {lastStatus: util.STATUS_CANCELLED}
+      }
+    ],
     verifyNegativeInput: [
       {
         desc: 'POST request',
@@ -58,24 +80,32 @@ describe('02. Fetch Order (GET /orders/{orderID})', function () {
     ]
   };
 
+  describe('Verify order flows', function () {
+    let tc = 1;
+    tests.verifyOrderFlows.forEach(function (test) {
+      it(`${tc++}. sequence [${test.sequence.join(' > ')}] should yield ${test.expected.lastStatus} status`,
+        function (done) {
+          let result = util.sendRequests({mocha: this, sequence: test.sequence});
+          done();
+        })
+    });
+  });
+
   describe('Verify negative input', function () {
     let tc = 1;
     tests.verifyNegativeInput.forEach(function (test) {
-      it(`${tc++}. should not accept ${test.desc}`, function (done) {
-        util.sendRequest({
+      it(`${tc++}. should not accept ${test.desc}`, async function () {
+        let res = await util.sendRequest({
           mocha: this,
           title: 'Fetch order',
           server: config.sampleAPI.server,
           endpoint: test.endpoint,
           verb: test.verb,
-          data: test.data,
-          callback: function (result) {
-            util.validateErrorResponse({
-              response: result.res, schema: test.expected.schema, status: test.expected.error.statusCode,
-              errorMessage: test.expected.error.message
-            });
-            done();
-          }
+          data: test.data
+        });
+        util.validateErrorResponse({
+          response: res, schema: test.expected.schema, status: test.expected.error.statusCode,
+          errorMessage: test.expected.error.message
         });
       });
     });

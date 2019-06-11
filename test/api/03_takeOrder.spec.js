@@ -61,21 +61,18 @@ describe('03. Take Order (PUT /orders/{orderID}/take)', function () {
   describe('Verify negative input', function () {
     let tc = 1;
     tests.verifyNegativeInput.forEach(function (test) {
-      it(`${tc++}. should not accept ${test.desc}`, function (done) {
-        util.sendRequest({
+      it(`${tc++}. should not accept ${test.desc}`, async function () {
+        let res = await util.sendRequest({
           mocha: this,
           title: 'Take order',
           server: config.sampleAPI.server,
           endpoint: test.endpoint,
           verb: test.verb,
-          data: test.data,
-          callback: function (result) {
-            util.validateErrorResponse({
-              response: result.res, schema: test.expected.schema, status: test.expected.error.statusCode,
-              errorMessage: test.expected.error.message
-            });
-            done();
-          }
+          data: test.data
+        });
+        util.validateErrorResponse({
+          response: res, schema: test.expected.schema, status: test.expected.error.statusCode,
+          errorMessage: test.expected.error.message
         });
       });
     });

@@ -9,19 +9,16 @@ const expect = chai.expect;
 describe('00. Ping (GET /ping)', function () {
   describe('Verify pong', function () {
     let tc = 1;
-    it(`${tc}. should return pong message`, function (done) {
-      util.sendRequest({
+    it(`${tc}. should return pong message`, async function () {
+      let res = await util.sendRequest({
         mocha: this,
         title: 'Ping',
         server: config.sampleAPI.server,
         endpoint: config.sampleAPI.ping,
-        verb: util.VERB_GET,
-        callback: function (result) {
-          expect(result.res).to.have.status(200);
-          expect(result.res.body.msg).to.be.equal('pong');
-          done();
-        }
+        verb: util.VERB_GET
       });
+      expect(res).to.have.status(200);
+      expect(res.body.msg).to.be.equal('pong');
     });
   });
 });

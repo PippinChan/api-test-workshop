@@ -68,7 +68,7 @@ describe('05. Cancel Order (PUT /orders/{orderID}/cancel)', function () {
     ]
   };
 
-  describe.only('Verify valid flows', function () {
+  describe('Verify valid flows', function () {
     let tc = 1;
     tests.verifyValidFlows.forEach(function (test) {
       it(`${tc++}. sequence [${test.sequence.join(' > ')}] should yield HTTP ${test.expected.statusCode}, ` +

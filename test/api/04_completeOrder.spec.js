@@ -11,6 +11,12 @@ const expect = chai.expect;
 
 describe('04. Complete Order (PUT /orders/{orderID}/complete)', function () {
   let tests = {
+    verifyValidFlows: [
+      {
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_COMPLETE],
+        expected: {statusCode: 200, lastStatus: util.STATUS_COMPLETED}
+      }
+    ],
     verifyNegativeInput: [
       {
         desc: 'POST request',
@@ -57,6 +63,24 @@ describe('04. Complete Order (PUT /orders/{orderID}/complete)', function () {
       },
     ]
   };
+
+  describe('Verify valid flows', function () {
+    let tc = 1;
+    tests.verifyValidFlows.forEach(function (test) {
+      it(`${tc++}. sequence [${test.sequence.join(' > ')}] should yield HTTP ${test.expected.statusCode}, ` +
+        `${test.expected.lastStatus} status, and valid JSON`,
+        async function () {
+          // perform the sequence
+          let res = await util.sendRequests({mocha: this, sequence: test.sequence});
+          let lastResult = res[test.sequence.length - 1];
+          expect(lastResult.body.status).to.be.equal(test.expected.lastStatus);
+
+          validator.validateResponse({
+            response: lastResult, schema: validator.COMPLETE_ORDER_SCHEMA, status: test.expected.statusCode
+          });
+        })
+    });
+  });
 
   describe('Verify negative input', function () {
     let tc = 1;

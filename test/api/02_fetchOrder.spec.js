@@ -14,23 +14,23 @@ describe('02. Fetch Order (GET /orders/{orderID})', function () {
     verifyOrderFlows: [
       {
         sequence: [util.SEQ_PLACE, util.SEQ_FETCH],
-        expected: {lastStatus: util.STATUS_ASSIGNING}
+        expected: {statusCode: 200, lastStatus: util.STATUS_ASSIGNING}
       },
       {
         sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_FETCH],
-        expected: {lastStatus: util.STATUS_ONGOING}
+        expected: {statusCode: 200, lastStatus: util.STATUS_ONGOING}
       },
       {
         sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_COMPLETE, util.SEQ_FETCH],
-        expected: {lastStatus: util.STATUS_COMPLETED}
+        expected: {statusCode: 200, lastStatus: util.STATUS_COMPLETED}
       },
       {
         sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_CANCEL, util.SEQ_FETCH],
-        expected: {lastStatus: util.STATUS_CANCELLED}
+        expected: {statusCode: 200, lastStatus: util.STATUS_CANCELLED}
       },
       {
         sequence: [util.SEQ_PLACE, util.SEQ_CANCEL, util.SEQ_FETCH],
-        expected: {lastStatus: util.STATUS_CANCELLED}
+        expected: {statusCode: 200, lastStatus: util.STATUS_CANCELLED}
       }
     ],
     verifyNegativeInput: [
@@ -82,17 +82,18 @@ describe('02. Fetch Order (GET /orders/{orderID})', function () {
 
   describe('Verify order flows', function () {
     let tc = 1;
+    // @pippinchan: FIXME: actual returned JSON schema is not matching the challenge definition page
     tests.verifyOrderFlows.forEach(function (test) {
-      it(`${tc++}. sequence [${test.sequence.join(' > ')}] should yield ${test.expected.lastStatus} status`,
+      it(`${tc++}. [FAIL] sequence [${test.sequence.join(' > ')}] should yield HTTP ${test.expected.statusCode}, ` +
+        `${test.expected.lastStatus} status, and valid JSON`,
         async function () {
           // perform the sequence
           let res = await util.sendRequests({mocha: this, sequence: test.sequence});
           let lastResult = res[test.sequence.length - 1];
           expect(lastResult.body.status).to.be.equal(test.expected.lastStatus);
 
-          // @pippinchan: FIXME: actual returned JSON schema is not matching the challenge definition page
           validator.validateResponse({
-            response: lastResult, schema: validator.FETCH_ORDER_SCHEMA, status: 200
+            response: lastResult, schema: validator.FETCH_ORDER_SCHEMA, status: test.expected.statusCode
           });
         })
     });

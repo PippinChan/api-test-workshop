@@ -9,6 +9,9 @@ module.exports = {
     /** compiled ajv validator functions **/
     PLACE_ORDER_SCHEMA: ajv.compile(require('./01_placeOrder.schema')),
     FETCH_ORDER_SCHEMA: ajv.compile(require('./02_fetchOrder.schema')),
+    TAKE_ORDER_SCHEMA: ajv.compile(require('./03_takeOrder.schema')),
+    COMPLETE_ORDER_SCHEMA: ajv.compile(require('./04_completeOrder.schema')),
+    CANCEL_ORDER_SCHEMA: ajv.compile(require('./05_cancelOrder.schema')),
     EMPTY_SCHEMA: ajv.compile(require('./98_empty.schema')),
     ERROR_SCHEMA: ajv.compile(require('./99_error.schema')),
 

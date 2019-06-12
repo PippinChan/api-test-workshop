@@ -11,6 +11,12 @@ const expect = chai.expect;
 
 describe('03. Take Order (PUT /orders/{orderID}/take)', function () {
   let tests = {
+    verifyValidFlows: [
+      {
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE],
+        expected: {statusCode: 200, lastStatus: util.STATUS_ONGOING}
+      }
+    ],
     verifyNegativeInput: [
       {
         desc: 'POST request',
@@ -57,6 +63,25 @@ describe('03. Take Order (PUT /orders/{orderID}/take)', function () {
       },
     ]
   };
+
+  describe('Verify valid flows', function () {
+    let tc = 1;
+    // @pippinchan: FIXME: actual returned JSON schema is not matching the challenge definition page
+    tests.verifyValidFlows.forEach(function (test) {
+      it(`${tc++}. [FAIL] sequence [${test.sequence.join(' > ')}] should yield HTTP ${test.expected.statusCode}, ` +
+        `${test.expected.lastStatus} status, and valid JSON`,
+        async function () {
+          // perform the sequence
+          let res = await util.sendRequests({mocha: this, sequence: test.sequence});
+          let lastResult = res[test.sequence.length - 1];
+          expect(lastResult.body.status).to.be.equal(test.expected.lastStatus);
+
+          validator.validateResponse({
+            response: lastResult, schema: validator.TAKE_ORDER_SCHEMA, status: test.expected.statusCode
+          });
+        })
+    });
+  });
 
   describe('Verify negative input', function () {
     let tc = 1;

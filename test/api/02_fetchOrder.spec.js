@@ -90,7 +90,7 @@ describe('02. Fetch Order (GET /orders/{orderID})', function () {
           let lastResult = res[test.sequence.length - 1];
           expect(lastResult.body.status).to.be.equal(test.expected.lastStatus);
 
-          // @pippinchan: FIXME: actual returned JSON schema is not matching the challenge page
+          // @pippinchan: FIXME: actual returned JSON schema is not matching the challenge definition page
           validator.validateResponse({
             response: lastResult, schema: validator.FETCH_ORDER_SCHEMA, status: 200
           });

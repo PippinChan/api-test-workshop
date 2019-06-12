@@ -40,6 +40,7 @@ Before running tests, check whether information in `test/config.js` is correct.
 * As [discouraged by Mochajs.org](https://mochajs.org/#arrow-functions), ECMAScript 6 arrow functions are not used in test spec functions.
 * Test data is now stored in `test/data` directory. But some data can be sourced from the SUT itself, for example, error messages or fare tables.
 * As some API results are questionable, some tests are left failed with comments in the code.
+* As most returned JSON schema from the API does not match the documented in the sample API page, I left most tests validating the JSON schema failing as well.
 #### Assumptions
 * Server would not use number `0` as order ID.
 > **Result:** In 404 order not found tests, `0` is used as order ID.

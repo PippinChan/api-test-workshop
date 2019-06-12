@@ -21,6 +21,17 @@ describe('05. Cancel Order (PUT /orders/{orderID}/cancel)', function () {
         expected: {statusCode: 200, lastStatus: util.STATUS_CANCELLED}
       }
     ],
+    verifyInvalidFlows: [
+      {
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_COMPLETE, util.SEQ_CANCEL],
+        expected: {schema: validator.ERROR_SCHEMA, error: error.general.orderStatusCompletedAlready}
+      },
+      // @pippinchan: FIXME: order cancelled could be cancelled again, expected 422 instead od 200
+      {
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_CANCEL, util.SEQ_CANCEL],
+        expected: {schema: validator.ERROR_SCHEMA, error: error.general.orderStatusCancelledAlready}
+      }
+    ],
     verifyNegativeInput: [
       {
         desc: 'POST request',
@@ -81,6 +92,24 @@ describe('05. Cancel Order (PUT /orders/{orderID}/cancel)', function () {
 
           validator.validateResponse({
             response: lastResult, schema: validator.CANCEL_ORDER_SCHEMA, status: test.expected.statusCode
+          });
+        })
+    });
+  });
+
+  describe('Verify invalid flows', function () {
+    let tc = 1;
+    tests.verifyInvalidFlows.forEach(function (test) {
+      it(`${tc++}. sequence [${test.sequence.join(' > ')}] should yield HTTP ${test.expected.statusCode}, ` +
+        `and custom error message`,
+        async function () {
+          // perform the sequence
+          let res = await util.sendRequests({mocha: this, sequence: test.sequence});
+          let lastResult = res[test.sequence.length - 1];
+
+          util.validateErrorResponse({
+            response: lastResult, schema: test.expected.schema, status: test.expected.error.statusCode,
+            errorMessage: test.expected.error.message
           });
         })
     });

@@ -15,6 +15,22 @@
     "methodNotAllowed": {
       "statusCode": 405
     },
+    "orderStatusNotAssigning": {
+      "statusCode": 422,
+      "message": "Order status is not ASSIGNING"
+    },
+    "orderStatusNotOngoing": {
+      "statusCode": 422,
+      "message": "Order status is not ONGOING"
+    },
+    "orderStatusCompletedAlready": {
+      "statusCode": 422,
+      "message": "Order status is COMPLETED already"
+    },
+    "orderStatusCancelledAlready": {
+      "statusCode": 422,
+      "message": "Order status is CANCELLED already"
+    },
     "serviceUnavailable": {
       "statusCode": 503,
       "message": "Service Unavailable"

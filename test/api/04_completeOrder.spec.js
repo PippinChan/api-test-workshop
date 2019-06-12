@@ -17,6 +17,12 @@ describe('04. Complete Order (PUT /orders/{orderID}/complete)', function () {
         expected: {statusCode: 200, lastStatus: util.STATUS_COMPLETED}
       }
     ],
+    verifyInvalidFlows: [
+      {
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_COMPLETE, util.SEQ_COMPLETE],
+        expected: {schema: validator.ERROR_SCHEMA, error: error.general.orderStatusNotOngoing}
+      }
+    ],
     verifyNegativeInput: [
       {
         desc: 'POST request',
@@ -77,6 +83,24 @@ describe('04. Complete Order (PUT /orders/{orderID}/complete)', function () {
 
           validator.validateResponse({
             response: lastResult, schema: validator.COMPLETE_ORDER_SCHEMA, status: test.expected.statusCode
+          });
+        })
+    });
+  });
+
+  describe('Verify invalid flows', function () {
+    let tc = 1;
+    tests.verifyInvalidFlows.forEach(function (test) {
+      it(`${tc++}. sequence [${test.sequence.join(' > ')}] should yield HTTP ${test.expected.statusCode}, ` +
+        `and custom error message`,
+        async function () {
+          // perform the sequence
+          let res = await util.sendRequests({mocha: this, sequence: test.sequence});
+          let lastResult = res[test.sequence.length - 1];
+
+          util.validateErrorResponse({
+            response: lastResult, schema: test.expected.schema, status: test.expected.error.statusCode,
+            errorMessage: test.expected.error.message
           });
         })
     });

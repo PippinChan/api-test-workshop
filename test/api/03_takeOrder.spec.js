@@ -64,7 +64,7 @@ describe('03. Take Order (PUT /orders/{orderID}/take)', function () {
       it(`${tc++}. should not accept ${test.desc}`, async function () {
         let res = await util.sendRequest({
           mocha: this,
-          title: 'Take order',
+          title: util.SEQ_TAKE,
           server: config.sampleAPI.server,
           endpoint: test.endpoint,
           verb: test.verb,

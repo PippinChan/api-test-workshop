@@ -64,7 +64,7 @@ describe('04. Complete Order (PUT /orders/{orderID}/complete)', function () {
       it(`${tc++}. should not accept ${test.desc}`, async function () {
         let res = await util.sendRequest({
           mocha: this,
-          title: 'Complete order',
+          title: util.SEQ_COMPLETE,
           server: config.sampleAPI.server,
           endpoint: test.endpoint,
           verb: test.verb,

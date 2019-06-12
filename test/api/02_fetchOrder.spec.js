@@ -13,23 +13,23 @@ describe('02. Fetch Order (GET /orders/{orderID})', function () {
   let tests = {
     verifyOrderFlows: [
       {
-        sequence: [util.SEQ_PLACE],
+        sequence: [util.SEQ_PLACE, util.SEQ_FETCH],
         expected: {lastStatus: util.STATUS_ASSIGNING}
       },
       {
-        sequence: [util.SEQ_PLACE, util.SEQ_TAKE],
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_FETCH],
         expected: {lastStatus: util.STATUS_ONGOING}
       },
       {
-        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_COMPLETE],
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_COMPLETE, util.SEQ_FETCH],
         expected: {lastStatus: util.STATUS_COMPLETED}
       },
       {
-        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_CANCEL],
+        sequence: [util.SEQ_PLACE, util.SEQ_TAKE, util.SEQ_CANCEL, util.SEQ_FETCH],
         expected: {lastStatus: util.STATUS_CANCELLED}
       },
       {
-        sequence: [util.SEQ_PLACE, util.SEQ_CANCEL],
+        sequence: [util.SEQ_PLACE, util.SEQ_CANCEL, util.SEQ_FETCH],
         expected: {lastStatus: util.STATUS_CANCELLED}
       }
     ],
@@ -84,9 +84,11 @@ describe('02. Fetch Order (GET /orders/{orderID})', function () {
     let tc = 1;
     tests.verifyOrderFlows.forEach(function (test) {
       it(`${tc++}. sequence [${test.sequence.join(' > ')}] should yield ${test.expected.lastStatus} status`,
-        function (done) {
-          let result = util.sendRequests({mocha: this, sequence: test.sequence});
-          done();
+        async function () {
+          // perform the sequence
+          let res = await util.sendRequests({mocha: this, sequence: test.sequence});
+          let lastResult = res[test.sequence.length - 1];
+          expect(lastResult.body.status).to.be.equal(test.expected.lastStatus);
         })
     });
   });
@@ -97,7 +99,7 @@ describe('02. Fetch Order (GET /orders/{orderID})', function () {
       it(`${tc++}. should not accept ${test.desc}`, async function () {
         let res = await util.sendRequest({
           mocha: this,
-          title: 'Fetch order',
+          title: util.SEQ_FETCH,
           server: config.sampleAPI.server,
           endpoint: test.endpoint,
           verb: test.verb,

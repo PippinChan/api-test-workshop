@@ -64,7 +64,7 @@ describe('05. Cancel Order (PUT /orders/{orderID}/cancel)', function () {
       it(`${tc++}. should not accept ${test.desc}`, async function () {
         let res = await util.sendRequest({
           mocha: this,
-          title: 'Cancel order',
+          title: util.SEQ_CANCEL,
           server: config.sampleAPI.server,
           endpoint: test.endpoint,
           verb: test.verb,

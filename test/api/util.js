@@ -36,10 +36,11 @@ let util = {
   /**
    * {OrderSequences}
    */
-  SEQ_PLACE: 'place',
-  SEQ_TAKE: 'take',
-  SEQ_COMPLETE: 'complete',
-  SEQ_CANCEL: 'cancel',
+  SEQ_PLACE: 'Place Order',
+  SEQ_FETCH: 'Fetch Order',
+  SEQ_TAKE: 'Take Order',
+  SEQ_COMPLETE: 'Complete Order',
+  SEQ_CANCEL: 'Cancel Order',
   /**
    * {OrderStatuses}
    */
@@ -60,7 +61,7 @@ let util = {
    * @param   {String}    options.endpoint    server's endpoint
    * @param   {Object}    [options.data]      payload to send with the request
    *
-   * @return  {Promise}   res                 chai's response subject when it is received
+   * @returns {Promise<Object>}   res        chai's response subject when it is received
    */
   sendRequest: options => {
     return new Promise(resolve => {
@@ -100,34 +101,54 @@ let util = {
    * @param   {Object}    options.mocha     Mocha's test object, referred to by `this` inside the test function
    * @param   {String[]}  options.sequence  sequence of API calls, see {OrderSequences}
    *
-   * @returns {Object[]}  result            array referring to chai's response objects in sequence returned
+   * @returns  {Promise<Object[]>}  res     array referring to chai's response objects in sequence returned
    */
   sendRequests: options => {
-    let orderID = null;
-    let result = [];
+    return new Promise(async resolve => {
+      let orderID = null;
+      let result = [];
 
-    let i = 0;
-    while (i < options.sequence.length) {
-      let thisSequence = options.sequence[i];
-      if (thisSequence !== util.SEQ_PLACE && orderID === null) {
-        throw '[Invalid sequence] Sequence must start with place order';
+      let i = 0;
+      while (i < options.sequence.length) {
+        let thisSequence = options.sequence[i];
+        if (thisSequence !== util.SEQ_PLACE && orderID === null) {
+          throw '[Invalid sequence] Sequence must start with place order';
+        }
+        let requestOptions = {
+          mocha: options.mocha,
+          title: thisSequence,
+          server: config.sampleAPI.server
+        };
+        switch (thisSequence) {
+          case util.SEQ_PLACE:
+            requestOptions.verb = util.VERB_POST;
+            requestOptions.endpoint = config.sampleAPI.placeOrder;
+            requestOptions.data = {stops: util.stops.two};
+            break;
+          case util.SEQ_FETCH:
+            requestOptions.verb = util.VERB_GET;
+            requestOptions.endpoint = config.sampleAPI.fetchOrder(orderID);
+            break;
+          case util.SEQ_TAKE:
+            requestOptions.verb = util.VERB_PUT;
+            requestOptions.endpoint = config.sampleAPI.takeOrder(orderID);
+            break;
+          case util.SEQ_COMPLETE:
+            requestOptions.verb = util.VERB_PUT;
+            requestOptions.endpoint = config.sampleAPI.completeOrder(orderID);
+            break;
+          case util.SEQ_CANCEL:
+            requestOptions.verb = util.VERB_PUT;
+            requestOptions.endpoint = config.sampleAPI.cancelOrder(orderID);
+            break;
+        }
+        let res = await util.sendRequest(requestOptions);
+        orderID = res.body.id;
+        result.push(res);
+        i++;
       }
-      let requestOptions = {
-        mocha: options.mocha,
-        title: thisSequence,
-        server: config.sampleAPI.server
-      };
-      switch (thisSequence) {
-        case util.SEQ_PLACE:
-          requestOptions.verb = util.VERB_POST;
-          requestOptions.endpoint = config.sampleAPI.placeOrder;
-          requestOptions.data = {stops: util.stops.two};
-          break;
-      }
-      i++;
-    }
-
-    return result;
+      resolve(result);
+    });
   },
   /**
    * @param   {Number}    options.h   time of day (hour)

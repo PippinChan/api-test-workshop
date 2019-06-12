@@ -206,7 +206,7 @@ describe('01. Place Order (POST /orders)', function () {
       it(`${tc++}. should return ${test.expected.statusCode} & valid JSON for ${test.desc}`, async function () {
         let res = await util.sendRequest({
           mocha: this,
-          title: 'Place order',
+          title: util.SEQ_PLACE,
           server: config.sampleAPI.server,
           endpoint: config.sampleAPI.placeOrder,
           verb: util.VERB_POST,
@@ -225,7 +225,7 @@ describe('01. Place Order (POST /orders)', function () {
       it(`${tc++}. should return correct fare for ${test.desc}`, async function () {
         let res = await util.sendRequest({
           mocha: this,
-          title: 'Place order',
+          title: util.SEQ_PLACE,
           server: config.sampleAPI.server,
           endpoint: config.sampleAPI.placeOrder,
           verb: util.VERB_POST,
@@ -250,7 +250,7 @@ describe('01. Place Order (POST /orders)', function () {
       it(`${tc++}. should not accept ${test.desc}`, async function () {
         let res = await util.sendRequest({
           mocha: this,
-          title: 'Place order',
+          title: util.SEQ_PLACE,
           server: config.sampleAPI.server,
           endpoint: config.sampleAPI.placeOrder,
           verb: test.verb,

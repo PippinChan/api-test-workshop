@@ -89,6 +89,11 @@ describe('02. Fetch Order (GET /orders/{orderID})', function () {
           let res = await util.sendRequests({mocha: this, sequence: test.sequence});
           let lastResult = res[test.sequence.length - 1];
           expect(lastResult.body.status).to.be.equal(test.expected.lastStatus);
+
+          // @pippinchan: FIXME: actual returned JSON schema is not matching the challenge page
+          validator.validateResponse({
+            response: lastResult, schema: validator.FETCH_ORDER_SCHEMA, status: 200
+          });
         })
     });
   });
